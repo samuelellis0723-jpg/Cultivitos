@@ -1020,18 +1020,50 @@ no_evaluable  si falta duracionDias o ventanaSiembra
 
 **Estado:** candidatas de diseño, no recomendaciones. No están validadas agronómica ni temporalmente. A y B no pueden declararse compatibles con la evidencia actual; C es plausible pero no verificada. La matriz ficticia de §7.5 no las valida. No se puntúan ni se presentan como recomendación hasta cumplir D18/D20 y ratificar D17–D21.
 
+#### Extensión interna experimental: evidencia de una secuencia
+
+Los contratos actuales validan los pasos y referencias de una estrategia, la temporalidad D18 y la evidencia D19 asociada a cada ciclo. No definen un campo que registre evidencia documental de la secuencia completa. Para explorar esa responsabilidad, el módulo interno `evaluar-respaldo-rotacion.js` admite en una estrategia la siguiente propuesta experimental:
+
+```js
+evidenciaRotacion: {
+  pasos: [{ orden, cultivoId, cicloId }, { orden, cultivoId, cicloId }],
+  nivelEvidencia: "directa_local|extrapolada|parcial|pendiente",
+  fuenteIds: ["id de fuente existente"]
+}
+```
+
+La lista `pasos` debe coincidir exactamente con la secuencia ordenada de la estrategia. `fuenteIds` solo se comprueba contra `fuentes[]`; que una referencia exista no demuestra que el documento respalde esa secuencia ni valida su calidad científica. La fuente de un cultivo, de un ciclo o de la estrategia no sustituye esta evidencia específica. Si falta `evidenciaRotacion`, el evaluador informa el faltante. Los niveles `parcial` y `pendiente` se conservan como tales; las declaraciones `directa_local` y `extrapolada` solo se etiquetan como declaradas.
+
+Esta extensión es una propuesta de implementación interna, no forma parte del contrato público aprobado y está pendiente de ratificación. La salida mantiene separadas estructura, compatibilidad temporal D18, elegibilidad calculada con las reglas existentes de ciclos y evidencia de secuencia. Ninguna de estas declaraciones habilita recomendaciones o ganadoras ni implica validez agronómica real. Los fixtures de sus pruebas son sintéticos y no respaldan rotaciones reales.
+
 ### 10.7 D22 — Trazabilidad de múltiples fuentes (pendiente)
 
-**Problema:** `Ciclo.fuenteId` es singular, pero `ventanaSiembra` y `duracionDias` pueden provenir de fuentes distintas. El mismo problema de representación aparece si no comparten `alcanceGeografico`/`localidad`: un solo alcance no representa ambos componentes.
+**Problema:** `Ciclo.fuenteId` es singular, pero atributos distintos (por ejemplo `ventanaSiembra` y `duracionDias`) pueden tener fuentes, niveles de evidencia o alcances distintos. Una referencia existente en `fuentes[]` solo resuelve el identificador; no demuestra que esa fuente respalde un atributo ni que tenga calidad científica suficiente.
 
-**Opciones a evaluar:**
+**Implementación interna experimental:** `backend/src/domain/catalog/resolver-evidencia-atributos.js` recibe objetivos de atributos y declaraciones fuera del catálogo. Cada declaración enlaza un `atributoId` con `fuenteId`, `respaldaAtributo`, `nivelEvidencia`, `alcanceGeografico`, `localidad` y `contextoFuente`. Puede haber más de una declaración por atributo; se conservan separadas y no se fusionan fuentes ni niveles.
 
-- Exigir una fuente primaria que respalde ambos valores.
-- Añadir `fuenteIdVentana` y `fuenteIdDuracion`.
-- Permitir una `Fuente` compuesta que cite varias fuentes.
-- Separar el ciclo o registrar la ventana y la duración en objetos con fuente, alcance y localidad propios.
+```js
+resolverEvidenciaAtributos({
+  catalogo, // contrato actual, sin campos añadidos
+  modo: "prueba_sintetica", // o "real"; vocabulario D7, no ejecuta D7
+  atributos: [{ id, alcanceGeografico, localidad }],
+  declaraciones: [{
+    atributoId,
+    fuenteId, // string o null
+    respaldaAtributo: true, // booleano explícito
+    nivelEvidencia, // vocabulario D19 existente
+    alcanceGeografico, // vocabulario D19 existente
+    localidad,
+    contextoFuente: "sintetica_prueba" // o "referencia_catalogo"
+  }]
+})
+```
 
-**Estado:** PENDIENTE. D17–D21 asumen una fuente y un alcance primarios por ciclo. Si no se cumple, D22 debe resolverse antes de cargar datos reales. Responsables: Hellen + Alex + Samuel.
+La salida marca el atributo sin declaraciones como `atributo_sin_fuente`; `declaraciones_por_fuente` solo indica que se recibieron registros y no es una aprobación agregada. Para cada registro se distingue `atributo_sin_fuente`, `fuente_no_resuelta`, `fuente_no_declara_respaldo_del_atributo`, `contexto_fuente_incompatible_con_modo`, `alcance_no_coincidente`, `alcance_indeterminado`, `evidencia_declarada`, `evidencia_parcial` y `evidencia_pendiente`. Los niveles y alcances se limitan a los vocabularios y coherencias ya descritos en D19; el alcance se compara por igualdad exacta, sin inferir contención geográfica. `referencia_catalogo_no_verificada` indica solo que se resolvió una referencia declarada en el contexto real; no certifica que la fuente sea auténtica, que respalde el atributo ni que sea científicamente válida. `sintetica_prueba` identifica fixtures, nunca datos reales.
+
+Esta extensión **no cambia `Ciclo`, `Fuente`, el catálogo ni el contrato público de API**, y no conecta la salida con elegibilidad, puntuación o Minimax. `modo: "real"` solo valida declaraciones de referencias del catálogo: no habilita el modo real de D7 ni recomendaciones. La estructura es una propuesta experimental y queda pendiente decidir, con Hellen, Alex y Samuel, cómo persistir y auditar las declaraciones, qué representa exactamente la confirmación `respaldaAtributo` y si el nivel/alcance deben vivir por atributo en el modelo público. No se inventan fuentes ni se promueven los fixtures sintéticos.
+
+**Estado:** D22 sigue pendiente de ratificación y de decisión de persistencia. La función cubre únicamente resolución interna de referencias y declaraciones; no resuelve calidad científica ni aprobación agronómica. Responsables: Hellen + Alex + Samuel.
 
 ### 10.8 D10 — Representación de compatibilidad temporal, niveles de evidencia y motivos en `ResultadoSimulacion` (pendiente de ratificación)
 
