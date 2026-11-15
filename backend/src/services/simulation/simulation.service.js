@@ -1,5 +1,5 @@
 import { calcularMinimaxRegret, ErrorEntradaDominio, CODIGOS_ERROR } from '../../domain/simulation/minimax-regret.js';
-import { getNasaHistoricalClimateSeries } from '../nasa/nasa.service.js';
+import { getNasaHistoricalClimateSeries, HISTORY_PERIOD } from '../nasa/nasa.service.js';
 import catalogoService from '../catalog/catalog.js';
 import { generarExplicacionIA } from '../ai/openai.service.js';
 
@@ -86,7 +86,7 @@ function mapearResultados(resultados) {
   }));
 }
 
-export async function simular({ finca, modo } = {}) {
+export async function simular({ finca, modo } = {}, { getClimate = getNasaHistoricalClimateSeries, explain = generarExplicacionIA } = {}) {
   const catalogo = await catalogoService.getCatalog();
   validarFinca(finca, catalogo);
 
@@ -95,7 +95,7 @@ export async function simular({ finca, modo } = {}) {
   let faltantesClima = [];
   if (!esDemo) {
     try {
-      clima = await getNasaHistoricalClimateSeries({ lat: finca.latitude, lon: finca.longitude });
+      clima = await getClimate({ latitude: finca.latitude, longitude: finca.longitude, ...HISTORY_PERIOD });
       faltantesClima = validarClima(clima);
     } catch (error) {
       faltantesClima = [`clima: no se pudo obtener (${error.message})`];
@@ -109,7 +109,7 @@ export async function simular({ finca, modo } = {}) {
   const motor = calcularMinimaxRegret(entrada);
 
   const estado = esDemo ? 'demo' : motor.estado;
-  const origenDatos = clima?.fuentes?.[0]?.origen ?? 'live';
+  const origenDatos = clima?.fuentes?.[0]?.origen ?? null;
   const resultadosMapeados = mapearResultados(motor.resultados);
   const datosFaltantes = esDemo
     ? []
@@ -122,7 +122,7 @@ export async function simular({ finca, modo } = {}) {
       : 'Simulación calculada con el motor minimax regret.';
 
   // Llamada a OpenAI con guardrails
-  const iaRespuesta = await generarExplicacionIA({
+  const iaRespuesta = await explain({
     estado,
     prioridadFinca: finca.prioridad,
     resultados: resultadosMapeados,
@@ -144,6 +144,7 @@ export async function simular({ finca, modo } = {}) {
     explicacion: iaRespuesta.explicacionIA,
     evidencia: {
       origen: esDemo ? 'demo' : origenDatos,
+      fuentes: esDemo ? [] : (clima?.fuentes ?? []),
       iaOrigen: iaRespuesta.origen,
       supuestos: esDemo
         ? ['Matriz ficticia del docs/contrato-api.md para verificar el algoritmo.']

@@ -1,0 +1,11 @@
+{
+  "checks": 4,
+  "passed": 4,
+  "failed": 0,
+  "scope": [
+    "frontend climate",
+    "domain climate",
+    "frontend absent provenance",
+    "frontend backup provenance"
+  ]
+}

@@ -1,0 +1,164 @@
+{
+  "tipo": "verificacion_HTTP",
+  "modo": "--live",
+  "fechaVerificacion": "2026-11-15T17:01:41.864Z",
+  "status": 200,
+  "coordenadas": {
+    "solicitadas": {
+      "latitude": 10.631234,
+      "longitude": -85.441234
+    },
+    "devueltas": {
+      "latitude": 10.631,
+      "longitude": -85.441
+    }
+  },
+  "periodo": {
+    "inicio": "20240101",
+    "fin": "20240103"
+  },
+  "fuente": {
+    "id": "nasa_power_daily",
+    "proveedor": "NASA POWER (AG Community)",
+    "urlConsulta": "https://power.larc.nasa.gov/api/temporal/daily/point?parameters=PRECTOTCORR%2CT2M%2CT2M_MAX&community=AG&longitude=-85.441234&latitude=10.631234&start=20240101&end=20240103&format=JSON&time-standard=LST",
+    "fechaConsulta": "2026-11-15T17:01:41.845Z",
+    "origen": "live",
+    "coordenadasSolicitadas": {
+      "latitude": 10.631234,
+      "longitude": -85.441234
+    },
+    "coordenadasDevueltas": {
+      "latitude": 10.631,
+      "longitude": -85.441
+    },
+    "periodo": {
+      "inicio": "20240101",
+      "fin": "20240103"
+    },
+    "unidades": {
+      "precipitacion": "mm",
+      "temperaturaMedia": "°C",
+      "temperaturaMaxima": "°C"
+    },
+    "unidadesOriginales": {
+      "PRECTOTCORR": "mm/day",
+      "T2M": "C",
+      "T2M_MAX": "C"
+    },
+    "parametros": [
+      "PRECTOTCORR",
+      "T2M",
+      "T2M_MAX"
+    ],
+    "estandarTemporal": "LST",
+    "cobertura": {
+      "porcentaje": 100
+    },
+    "coberturaPorVariable": {
+      "precipitacion": {
+        "diasEsperados": 3,
+        "diasPresentes": 3,
+        "porcentaje": 100,
+        "faltantes": []
+      },
+      "temperaturaMedia": {
+        "diasEsperados": 3,
+        "diasPresentes": 3,
+        "porcentaje": 100,
+        "faltantes": []
+      },
+      "temperaturaMaxima": {
+        "diasEsperados": 3,
+        "diasPresentes": 3,
+        "porcentaje": 100,
+        "faltantes": []
+      }
+    }
+  },
+  "variables": {
+    "precipitacion": {
+      "unidad": "mm",
+      "unidadOriginal": "mm/day",
+      "cobertura": {
+        "diasEsperados": 3,
+        "diasPresentes": 3,
+        "porcentaje": 100,
+        "faltantes": []
+      },
+      "muestraPrimerosTresDias": [
+        {
+          "fecha": "20240101",
+          "valor": 0.01
+        },
+        {
+          "fecha": "20240102",
+          "valor": 0
+        },
+        {
+          "fecha": "20240103",
+          "valor": 0.01
+        }
+      ],
+      "ultimoDia": {
+        "fecha": "20240103",
+        "valor": 0.01
+      }
+    },
+    "temperaturaMedia": {
+      "unidad": "°C",
+      "unidadOriginal": "C",
+      "cobertura": {
+        "diasEsperados": 3,
+        "diasPresentes": 3,
+        "porcentaje": 100,
+        "faltantes": []
+      },
+      "muestraPrimerosTresDias": [
+        {
+          "fecha": "20240101",
+          "valor": 27.28
+        },
+        {
+          "fecha": "20240102",
+          "valor": 27.69
+        },
+        {
+          "fecha": "20240103",
+          "valor": 27.6
+        }
+      ],
+      "ultimoDia": {
+        "fecha": "20240103",
+        "valor": 27.6
+      }
+    },
+    "temperaturaMaxima": {
+      "unidad": "°C",
+      "unidadOriginal": "C",
+      "cobertura": {
+        "diasEsperados": 3,
+        "diasPresentes": 3,
+        "porcentaje": 100,
+        "faltantes": []
+      },
+      "muestraPrimerosTresDias": [
+        {
+          "fecha": "20240101",
+          "valor": 31.7
+        },
+        {
+          "fecha": "20240102",
+          "valor": 32.26
+        },
+        {
+          "fecha": "20240103",
+          "valor": 32.64
+        }
+      ],
+      "ultimoDia": {
+        "fecha": "20240103",
+        "valor": 32.64
+      }
+    }
+  }
+}
