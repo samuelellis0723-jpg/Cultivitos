@@ -87,7 +87,7 @@ export default function FarmDetails({
             ))}
           </select>
           <span id="mesInicio-hint" className="fv-hint">
-            Ventana mensual sin fijar un año calendario arbitrario.
+            Elige el mes en que planeas empezar.
           </span>
           <FieldError id="mesInicio-error" message={errors.mesInicio} />
         </div>
@@ -102,7 +102,7 @@ export default function FarmDetails({
             Cultivos anteriores en la parcela (opcional)
           </legend>
           <span id="cultivosAnteriores-hint" className="fv-hint">
-            Provisional: selección por ID de catálogo; sin texto libre. Si no los conoces, déjalo sin marcar.
+            Marca solo lo que se sembró antes en esta parcela. Si no lo sabes, déjalo sin marcar.
           </span>
           <div className="fv-choice-options">
             {(catalog?.cultivos ?? []).map((crop) => {

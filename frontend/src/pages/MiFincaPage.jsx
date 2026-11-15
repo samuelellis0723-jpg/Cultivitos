@@ -1,16 +1,14 @@
+import WaterChoice from '../components/form/WaterChoice.jsx';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import LocationMap from '../components/form/LocationMap.jsx';
 import ConnectionStatus from '../components/ConnectionStatus.jsx';
 import Icon from '../components/common/Icon.jsx';
-import DataOriginBadge from '../components/feedback/DataOriginBadge.jsx';
-import ErrorState from '../components/feedback/ErrorState.jsx';
-import LoadingState from '../components/feedback/LoadingState.jsx';
 import ChoiceGroup from '../components/form/ChoiceGroup.jsx';
 import FarmDetails from '../components/form/FarmDetails.jsx';
 import FieldError from '../components/form/FieldError.jsx';
-import FlowActions from '../components/layout/FlowActions.jsx';
 import { useFieldverse } from '../context/FieldverseContext.jsx';
-import { clearDraft, saveDraft } from '../services/storage.js';
+import { clearDraft } from '../services/storage.js';
 import { createEmptyFinca, validateFinca } from '../utils/validation.js';
 
 export default function MiFincaPage() {
@@ -32,6 +30,7 @@ export default function MiFincaPage() {
 
   const latRef = useRef(null);
   const lonRef = useRef(null);
+  const mapRef = useRef(null);
 
   const catalog = catalogState.data;
 
@@ -52,18 +51,6 @@ export default function MiFincaPage() {
       const nextCrops = exists ? current.filter((id) => id !== cropId) : [...current, cropId];
       return { ...prev, cultivosAnteriores: nextCrops };
     });
-  };
-
-  const handleSaveDraft = () => {
-    const result = saveDraft(fincaDraft, catalog?.version);
-    if (result.ok) {
-      setDraftNotice({
-        type: 'info',
-        text: `Borrador guardado en este dispositivo (${new Date(result.savedAt).toLocaleTimeString('es-CR')}).`,
-      });
-    } else {
-      setDraftNotice({ type: 'error', text: result.error });
-    }
   };
 
   const handleClearDraft = () => {
@@ -115,217 +102,62 @@ export default function MiFincaPage() {
     navigate('/explora');
   };
 
+  const ready = catalogState.status === 'ok';
   return (
-    <div className="fv-step-enter">
-      <div className="fv-page-context">
-        <div className="fv-context-left">
-          <span className="fv-badge fv-badge-step">Paso 1 de 3 · Tu finca</span>
-          <DataOriginBadge origin={dataMode === 'demo' ? 'demo' : 'live'} />
-        </div>
-        {catalog?.version ? (
-          <span className="fv-hint">Catálogo: {catalog.version}</span>
-        ) : null}
-      </div>
-
-      <div className="fv-page-header">
-        <div>
-          <h1 className="fv-page-title">Conozcamos tu finca</h1>
-          <p className="fv-page-lead">
-            Registra la ubicación, disponibilidad de agua y condiciones de tu parcela para consultar el clima y comparar estrategias en ciclos ordenados.
-          </p>
-        </div>
-      </div>
-
-      <div style={{ marginBottom: '24px' }}>
-        <ConnectionStatus />
-      </div>
-
-      {catalogState.status === 'loading' ? (
-        <LoadingState message="Cargando vocabulario y opciones del catálogo…" />
-      ) : catalogState.status === 'error' ? (
-        <ErrorState
-          title="Catálogo en vivo no disponible"
-          message={`${catalogState.error} En modo en vivo no se sustituyen las opciones por listas locales silenciosas.`}
-          onRetry={reloadCatalog}
-          extraAction={
-            <button
-              type="button"
-              className="fv-btn fv-btn-primary fv-btn-sm"
-              onClick={() => switchDataMode('demo')}
-            >
-              Activar modo demostración
-            </button>
-          }
-        />
-      ) : (
-        <form onSubmit={handleSubmit} noValidate>
-          {draftNotice ? (
-            <div
-              className={`fv-state-box ${draftNotice.type === 'error' ? 'fv-state-error' : ''}`}
-              role="status"
-              aria-live="polite"
-              style={{ marginBottom: '20px', padding: '12px 16px' }}
-            >
-              <span>{draftNotice.text}</span>
+    <div className="farm-page fv-step-enter">
+      <form id="farm-form" onSubmit={handleSubmit} noValidate>
+        <div className="farm-layout">
+          <div className="farm-form-column">
+            <div className="farm-heading">
+              <h1>Conozcamos tu finca.</h1>
+              <p>Tres datos para empezar a explorar alternativas para tu suelo.</p>
             </div>
-          ) : null}
-
-          <div className="fv-card fv-form-grid">
-            <div className="fv-form-section fv-form-section-full">
-              <div className="fv-row-wrap" style={{ justifyContent: 'space-between' }}>
-                <div>
-                  <h2 className="fv-section-title">Ubicación de la parcela</h2>
-                  <p className="fv-section-desc">
-                    Ingresa coordenadas decimales válidas (latitud -90 a 90, longitud -180 a 180).
-                  </p>
-                </div>
-                {dataMode === 'demo' ? (
-                  <button
-                    type="button"
-                    className="fv-btn fv-btn-secondary fv-btn-sm"
-                    onClick={handleLoadPilotCoords}
-                  >
-                    <Icon name="pin" size={16} />
-                    <span>Cargar coordenadas ilustrativas (demo)</span>
-                  </button>
-                ) : null}
+            {catalogState.status === 'loading' && <p role="status" className="farm-notice">Estamos preparando las opciones de tu finca…</p>}
+            {catalogState.status === 'error' && <div className="farm-notice farm-notice-warning" role="alert">
+              <strong>No pudimos cargar las opciones de tu finca.</strong>
+              <p>Puedes ubicar tu parcela y guardar lo que llevas. Intenta de nuevo para elegir el agua y tus prioridades.</p>
+              <div className="fv-row-wrap"><button type="button" className="fv-btn fv-btn-secondary fv-btn-sm" onClick={reloadCatalog}>Intentar de nuevo</button><button type="button" className="fv-btn fv-btn-secondary fv-btn-sm" onClick={() => switchDataMode('demo')}>Activar modo demostración</button></div>
+            </div>}
+            {dataMode === 'demo' && <p className="farm-demo-note">Demostración · opciones y resultados ficticios.</p>}
+            {draftNotice && <div className="farm-notice" role="status">{draftNotice.text}</div>}
+            <section className="farm-question">
+              <h2><span className="farm-number">1</span> ¿Dónde está tu finca?</h2>
+              <div className="farm-location-row">
+                <label className="sr-only" htmlFor="finca-localidad">Nombre o localidad de referencia (opcional)</label>
+                <input id="finca-localidad" className="fv-input" placeholder="Nombre de tu finca o localidad" value={fincaDraft.localidad} onChange={e => updateField('localidad', e.target.value)} />
+                <button type="button" className="fv-btn fv-btn-secondary" onClick={() => { mapRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' }); mapRef.current?.focus({ preventScroll: true }); }}>Elegir en el mapa</button>
               </div>
-
-              <div className="fv-field">
-                <label className="fv-label" htmlFor="finca-localidad">
-                  Nombre o localidad de referencia (opcional)
-                </label>
-                <input
-                  id="finca-localidad"
-                  name="localidad"
-                  type="text"
-                  className="fv-input"
-                  placeholder="Ej. Lote Norte"
-                  value={fincaDraft.localidad}
-                  onChange={(e) => updateField('localidad', e.target.value)}
-                />
+              <div className="farm-coordinates">
+                {[['latitude', 'Latitud', latRef, -90, 90], ['longitude', 'Longitud', lonRef, -180, 180]].map(([key, label, ref, min, max]) => <div className="fv-field" key={key}>
+                  <label htmlFor={`finca-${key}`}>{label}</label>
+                  <input ref={ref} id={`finca-${key}`} type="number" step="any" min={min} max={max} className="fv-input" placeholder={key === 'latitude' ? 'Ej. 9.93' : 'Ej. -84.09'} value={fincaDraft[key]} onChange={e => updateField(key, e.target.value)} aria-invalid={Boolean(errors[key])} aria-describedby={errors[key] ? `${key}-error` : undefined} />
+                  <FieldError id={`${key}-error`} message={errors[key]} />
+                </div>)}
               </div>
-
-              <div className="fv-coords-row">
-                <div className="fv-field">
-                  <label className="fv-label" htmlFor="finca-latitude">
-                    Latitud *
-                  </label>
-                  <input
-                    ref={latRef}
-                    id="finca-latitude"
-                    name="latitude"
-                    type="number"
-                    step="any"
-                    min="-90"
-                    max="90"
-                    className="fv-input"
-                    placeholder="Ej. 9.93"
-                    value={fincaDraft.latitude}
-                    onChange={(e) => updateField('latitude', e.target.value)}
-                    aria-invalid={Boolean(errors.latitude)}
-                    aria-describedby={errors.latitude ? 'latitude-error' : 'latitude-hint'}
-                  />
-                  <span id="latitude-hint" className="fv-hint">
-                    Rango permitido: -90 a 90.
-                  </span>
-                  <FieldError id="latitude-error" message={errors.latitude} />
-                </div>
-
-                <div className="fv-field">
-                  <label className="fv-label" htmlFor="finca-longitude">
-                    Longitud *
-                  </label>
-                  <input
-                    ref={lonRef}
-                    id="finca-longitude"
-                    name="longitude"
-                    type="number"
-                    step="any"
-                    min="-180"
-                    max="180"
-                    className="fv-input"
-                    placeholder="Ej. -84.09"
-                    value={fincaDraft.longitude}
-                    onChange={(e) => updateField('longitude', e.target.value)}
-                    aria-invalid={Boolean(errors.longitude)}
-                    aria-describedby={errors.longitude ? 'longitude-error' : 'longitude-hint'}
-                  />
-                  <span id="longitude-hint" className="fv-hint">
-                    Rango permitido: -180 a 180.
-                  </span>
-                  <FieldError id="longitude-error" message={errors.longitude} />
-                </div>
-              </div>
-            </div>
-
-            <div className="fv-form-section">
-              <ChoiceGroup
-                name="riego"
-                legend="Disponibilidad de agua / riego *"
-                hint="Indica el régimen real. «No lo sé» se conserva como desconocido, nunca como cero."
-                options={catalog?.opcionesFinca?.riego}
-                value={fincaDraft.riego}
-                onChange={(val) => updateField('riego', val)}
-                error={errors.riego}
-              />
-            </div>
-
-            <div className="fv-form-section">
-              <ChoiceGroup
-                name="prioridad"
-                legend="Prioridad principal *"
-                hint="Orienta el enfoque de la comparación sin prometer cosechas."
-                options={catalog?.opcionesFinca?.prioridad}
-                value={fincaDraft.prioridad}
-                onChange={(val) => updateField('prioridad', val)}
-                error={errors.prioridad}
-              />
-            </div>
-
-            <FarmDetails
-              catalog={catalog}
-              draft={fincaDraft}
-              errors={errors}
-              onChange={updateField}
-              onToggleCrop={togglePreviousCrop}
-              forceOpen={forceOpenDetails}
-            />
-
-            <div className="fv-form-section-full fv-row-wrap" style={{ justifyContent: 'space-between', paddingTop: '8px' }}>
-              <div className="fv-row-wrap">
-                <button
-                  type="button"
-                  className="fv-btn fv-btn-secondary"
-                  onClick={handleSaveDraft}
-                >
-                  Guardar borrador en este dispositivo
-                </button>
-                <button
-                  type="button"
-                  className="fv-btn fv-btn-ghost"
-                  onClick={handleClearDraft}
-                >
-                  Borrar borrador
-                </button>
-              </div>
-              <button type="submit" className="fv-btn fv-btn-primary">
-                <span>Explorar mi finca</span>
-                <Icon name="arrowRight" size={18} />
-              </button>
-            </div>
+              {dataMode === 'demo' && <button className="farm-text-button" type="button" onClick={handleLoadPilotCoords}>Usar ubicación ilustrativa de demostración</button>}
+            </section>
+            <fieldset className="farm-dependent" disabled={!ready}>
+              <legend className="sr-only">Opciones de tu finca</legend>
+              <section className="farm-question">
+                <WaterChoice options={catalog?.opcionesFinca?.riego} value={fincaDraft.riego} onChange={val => updateField('riego', val)} error={errors.riego} />
+                {!ready && <div className="farm-unavailable-cards"><span>Opciones de agua pendientes</span><span>Disponibles al volver a cargar</span></div>}
+              </section>
+              <section className="farm-question farm-priorities">
+                <ChoiceGroup name="prioridad" legend={<><span className="farm-number">3</span> ¿Qué quieres priorizar?</>} options={catalog?.opcionesFinca?.prioridad} value={fincaDraft.prioridad} onChange={val => updateField('prioridad', val)} error={errors.prioridad} />
+                {!ready && <div className="farm-unavailable-cards"><span>Prioridades pendientes</span></div>}
+              </section>
+              <FarmDetails catalog={catalog} draft={fincaDraft} errors={errors} onChange={updateField} onToggleCrop={togglePreviousCrop} forceOpen={forceOpenDetails} />
+            </fieldset>
+            <p className="farm-crop-note">La comparación utiliza las estrategias disponibles. El cultivo que te interesa aún no forma parte de esta evaluación.</p>
           </div>
-        </form>
-      )}
-
-      {catalogState.status === 'ok' ? (
-        <FlowActions
-          stepNumber={1}
-          stepLabel="Perfil de tu finca"
-          primaryLabel="Explorar mi finca"
-          onPrimaryClick={handleSubmit}
-        />
-      ) : null}
+          <LocationMap latitude={fincaDraft.latitude} longitude={fincaDraft.longitude} mapRef={mapRef} onSelect={point => { updateField('latitude', point.latitude); updateField('longitude', point.longitude); }} />
+        </div>
+        <div className="farm-bottom-actions">
+          <span>Paso 1 de 3 · Parámetros iniciales de parcela</span>
+          <div className="fv-row-wrap"><button type="button" className="farm-text-button" onClick={handleClearDraft}>Borrar borrador</button><button type="submit" className="fv-btn fv-btn-primary" disabled={!ready}>Explorar mi finca <Icon name="arrowRight" size={16} /></button></div>
+        </div>
+      </form>
+      {import.meta.env.DEV && <details className="farm-technical"><summary>Panel técnico de desarrollo</summary><ConnectionStatus />{catalogState.error && <p>{catalogState.error}</p>}</details>}
     </div>
   );
 }

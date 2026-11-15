@@ -1,9 +1,17 @@
+import { useLocation } from 'react-router-dom';
+import { saveDraft } from '../../services/storage.js';
 import { Link } from 'react-router-dom';
 import { useFieldverse } from '../../context/FieldverseContext.jsx';
 import StepNavigation from './StepNavigation.jsx';
 
 export default function AppHeader() {
-  const { dataMode, switchDataMode, demoCase, setDemoCase } = useFieldverse();
+  const { dataMode, switchDataMode, demoCase, setDemoCase, fincaDraft, catalogState, setDraftNotice } = useFieldverse();
+
+  const location = useLocation();
+  const saveAndExit = () => {
+    const saved = saveDraft(fincaDraft, catalogState.data?.version);
+    setDraftNotice({ type: saved.ok ? 'info' : 'error', text: saved.ok ? 'Tu finca quedó guardada en este dispositivo. Puedes cerrar esta pestaña y continuar después.' : 'No pudimos guardar tu finca. Revisa el espacio disponible del navegador e intenta de nuevo.' });
+  };
 
   return (
     <>
@@ -23,6 +31,7 @@ export default function AppHeader() {
           <StepNavigation />
 
           <div className="fv-header-actions">
+            {location.pathname === '/' && <button type="button" className="fv-btn fv-btn-secondary fv-btn-sm" onClick={saveAndExit}>Guardar y salir</button>}
             <button
               type="button"
               className="fv-btn fv-btn-secondary fv-btn-sm"
@@ -39,7 +48,7 @@ export default function AppHeader() {
         <div className="fv-demo-bar" role="region" aria-label="Estado de modo demostración">
           <div className="fv-demo-bar-inner">
             <div>
-              <strong>MODO DEMOSTRACIÓN:</strong> estás viendo fixtures ficticios de desarrollo. No son datos de NASA POWER ni recomendaciones agronómicas reales.
+              <strong>MODO DEMOSTRACIÓN:</strong> Opciones y resultados ficticios para conocer la herramienta. No son recomendaciones para tu finca.
             </div>
             <label className="fv-row-wrap" style={{ fontSize: '12px', fontWeight: 600 }}>
               <span>Caso de prueba:</span>

@@ -6,6 +6,7 @@ import './assets/styles/tokens.css';
 import './assets/styles/global.css';
 import './assets/styles/components.css';
 import './assets/styles/motion.css';
+import './assets/styles/farm.css';
 import './assets/styles/print.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
