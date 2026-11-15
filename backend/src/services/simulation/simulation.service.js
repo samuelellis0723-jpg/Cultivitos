@@ -1,20 +1,41 @@
-import {calcularMinimaxRegret, ErrorEntradaDominio, CODIGOS_ERROR, } from '../../domain/simulation/minimax-regret.js';
+import { calcularMinimaxRegret, ErrorEntradaDominio, CODIGOS_ERROR } from '../../domain/simulation/minimax-regret.js';
 import { getNasaHistoricalClimateSeries } from '../nasa/nasa.service.js';
 import catalogoService from '../catalog/catalog.js';
 
 const ESCENARIOS = ['habitual', 'seco', 'humedo'];
 
+// Variables climáticas esenciales según el contrato de dominio (§5.2)
+const VARIABLES_CLIMA_REQUERIDAS = ['precipitacion', 'temperaturaMedia', 'temperaturaMaxima'];
+
 // Matriz ficticia del docs/contrato-api.md — SOLO para modo demo
 const MATRIZ_DEMO = {
-  E1: { habitual: 90, seco: 35, humedo: 55 },  // Maíz → Frijol (antes A)
-  E2: { habitual: 75, seco: 80, humedo: 50 },  // Maíz → Sorgo (antes B)
-  E3: { habitual: 80, seco: 70, humedo: 75 },  // Sorgo → Frijol (antes C)
+  E1: { habitual: 90, seco: 35, humedo: 55 },  // Maíz → Frijol
+  E2: { habitual: 75, seco: 80, humedo: 50 },  // Maíz → Sorgo
+  E3: { habitual: 80, seco: 70, humedo: 75 },  // Sorgo → Frijol
 };
+
 function esNumero(x) { return typeof x === 'number' && Number.isFinite(x); }
+
+// Valida los metadatos esenciales del objeto clima (contrato §5.2). Devuelve lista de faltantes.
+function validarClima(clima) {
+  if (!clima || typeof clima !== 'object') return ['clima: sin datos'];
+  const faltantes = [];
+  const variables = clima.variables ?? {};
+  for (const clave of VARIABLES_CLIMA_REQUERIDAS) {
+    const v = variables[clave];
+    if (!v) { faltantes.push(`clima.variables.${clave}: ausente`); continue; }
+    if (!v.unidad) faltantes.push(`clima.variables.${clave}.unidad: ausente`);
+    if (!['live', 'backup'].includes(v.procedencia)) faltantes.push(`clima.variables.${clave}.procedencia: ausente o inválida`);
+    if (!v.fechaConsulta) faltantes.push(`clima.variables.${clave}.fechaConsulta: ausente`);
+    if (!v.cobertura || !Number.isFinite(v.cobertura.porcentaje)) faltantes.push(`clima.variables.${clave}.cobertura: ausente o sin porcentaje`);
+    if (!Array.isArray(v.serie)) faltantes.push(`clima.variables.${clave}.serie: ausente`);
+  }
+  return faltantes;
+}
 
 function validarFinca(finca, catalogo) {
   if (!finca || typeof finca !== 'object') {
-    throw new Error('La finca es obligatoria.');
+    throw new ErrorEntradaDominio(CODIGOS_ERROR.ENTRADA_INVALIDA, 'La finca es obligatoria.');
   }
   const errores = [];
   if (!esNumero(finca.latitude) || finca.latitude < -90 || finca.latitude > 90) {
@@ -38,11 +59,13 @@ function validarFinca(finca, catalogo) {
   for (const id of anteriores) {
     if (!cultivosValidos.has(id)) errores.push(`"cultivosAnteriores" contiene el cultivo desconocido "${id}".`);
   }
-    if (errores.length > 0) {
+  if (errores.length > 0) {
     throw new ErrorEntradaDominio(CODIGOS_ERROR.ENTRADA_INVALIDA, errores.join(' '));
   }
 }
 
+// PUNTO ÚNICO DE CONEXIÓN con las reglas de dominio de Hellen (D5/D7).
+// Cuando publiquen las reglas de elegibilidad y puntuación, este es el único lugar a modificar.
 function armarEstrategiasParaMotor(catalogo, modo) {
   return (catalogo.estrategias ?? []).map((e) => {
     if (modo === 'demo') {
@@ -74,9 +97,16 @@ export async function simular({ finca, modo } = {}) {
   validarFinca(finca, catalogo);
 
   const esDemo = modo === 'demo';
-  const clima = esDemo
-    ? null
-    : await getNasaHistoricalClimateSeries({ lat: finca.latitude, lon: finca.longitude });
+  let clima = null;
+  let faltantesClima = [];
+  if (!esDemo) {
+    try {
+      clima = await getNasaHistoricalClimateSeries({ lat: finca.latitude, lon: finca.longitude });
+      faltantesClima = validarClima(clima);
+    } catch (error) {
+      faltantesClima = [`clima: no se pudo obtener (${error.message})`];
+    }
+  }
 
   const entrada = {
     escenarios: ESCENARIOS,
@@ -86,9 +116,13 @@ export async function simular({ finca, modo } = {}) {
 
   const estado = esDemo ? 'demo' : motor.estado;
 
+  // El origen de la evidencia refleja de dónde salieron realmente los datos
+  const origenDatos = clima?.fuentes?.[0]?.origen ?? 'live';
+
   return {
     estado,
     escenarios: motor.escenarios,
+    clima,
     resultados: mapearResultados(motor.resultados),
     descartes: motor.descartes,
     ganadoras: motor.ganadoras,
@@ -101,11 +135,13 @@ export async function simular({ finca, modo } = {}) {
           ? 'Simulación incompleta: faltan las reglas de puntuación agronómica o datos climáticos esenciales. No se declara ganadora.'
           : 'Simulación calculada con el motor minimax regret.',
     evidencia: {
-      origen: esDemo ? 'demo' : 'live',
+      origen: esDemo ? 'demo' : origenDatos,
       supuestos: esDemo
         ? ['Matriz ficticia del docs/contrato-api.md para verificar el algoritmo.']
         : ['Reglas de puntuación agronómica pendientes (D7). Las puntuaciones se reportan como no calculables.'],
-      datosFaltantes: esDemo ? [] : ['Reglas de puntuación agronómica (pendiente Hellen).'],
+      datosFaltantes: esDemo
+        ? []
+        : [...faltantesClima, 'Reglas de puntuación agronómica (pendiente Hellen, D7).'],
       catalogoVersion: catalogo.version,
       motorVersion: 'minimax-regret v1',
       reglasVersion: 'no-implementado',
