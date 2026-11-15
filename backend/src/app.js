@@ -2,6 +2,7 @@ import express from 'express';
 import healthRouter from './routes/health.routes.js';
 import climateRouter from './routes/climate.routes.js';
 import catalogRouter from './routes/catalog.routes.js';
+import simulationRouter from './routes/simulation.routes.js';
 
 export function createApp() {
   const app = express();
@@ -13,6 +14,8 @@ export function createApp() {
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
     next();
   });
+
+  app.use('/api/simulations', simulationRouter);
 
   app.use('/api/health', healthRouter);
   app.use('/api/climate', climateRouter);
