@@ -1020,6 +1020,22 @@ no_evaluable  si falta duracionDias o ventanaSiembra
 
 **Estado:** candidatas de diseño, no recomendaciones. No están validadas agronómica ni temporalmente. A y B no pueden declararse compatibles con la evidencia actual; C es plausible pero no verificada. La matriz ficticia de §7.5 no las valida. No se puntúan ni se presentan como recomendación hasta cumplir D18/D20 y ratificar D17–D21.
 
+#### Extensión interna experimental: evidencia de una secuencia
+
+Los contratos actuales validan los pasos y referencias de una estrategia, la temporalidad D18 y la evidencia D19 asociada a cada ciclo. No definen un campo que registre evidencia documental de la secuencia completa. Para explorar esa responsabilidad, el módulo interno `evaluar-respaldo-rotacion.js` admite en una estrategia la siguiente propuesta experimental:
+
+```js
+evidenciaRotacion: {
+  pasos: [{ orden, cultivoId, cicloId }, { orden, cultivoId, cicloId }],
+  nivelEvidencia: "directa_local|extrapolada|parcial|pendiente",
+  fuenteIds: ["id de fuente existente"]
+}
+```
+
+La lista `pasos` debe coincidir exactamente con la secuencia ordenada de la estrategia. `fuenteIds` solo se comprueba contra `fuentes[]`; que una referencia exista no demuestra que el documento respalde esa secuencia ni valida su calidad científica. La fuente de un cultivo, de un ciclo o de la estrategia no sustituye esta evidencia específica. Si falta `evidenciaRotacion`, el evaluador informa el faltante. Los niveles `parcial` y `pendiente` se conservan como tales; las declaraciones `directa_local` y `extrapolada` solo se etiquetan como declaradas.
+
+Esta extensión es una propuesta de implementación interna, no forma parte del contrato público aprobado y está pendiente de ratificación. La salida mantiene separadas estructura, compatibilidad temporal D18, elegibilidad calculada con las reglas existentes de ciclos y evidencia de secuencia. Ninguna de estas declaraciones habilita recomendaciones o ganadoras ni implica validez agronómica real. Los fixtures de sus pruebas son sintéticos y no respaldan rotaciones reales.
+
 ### 10.7 D22 — Trazabilidad de múltiples fuentes (pendiente)
 
 **Problema:** `Ciclo.fuenteId` es singular, pero `ventanaSiembra` y `duracionDias` pueden provenir de fuentes distintas. El mismo problema de representación aparece si no comparten `alcanceGeografico`/`localidad`: un solo alcance no representa ambos componentes.
