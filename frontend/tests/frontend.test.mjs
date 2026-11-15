@@ -72,18 +72,18 @@ test('adaptSimulationResponse distingue 0 válido de null y conserva ganadoras',
   const incomplete = adaptSimulationResponse(DEMO_SIMULATION_CASES.incomplete);
   assert.equal(incomplete.estado, 'incompleto');
   assert.deepEqual(incomplete.ganadoras, []);
-  const stratA = incomplete.resultados.find((r) => r.estrategiaId === 'A');
-  const stratB = incomplete.resultados.find((r) => r.estrategiaId === 'B');
+  const stratA = incomplete.resultados.find((r) => r.estrategiaId === 'E1');
+  const stratB = incomplete.resultados.find((r) => r.estrategiaId === 'E2');
   assert.equal(stratA.puntajes.seco, null);
   assert.equal(stratB.puntajes.habitual, 0);
 });
 
-test('Matriz demostrativa A/B/C tiene C como ganadora y arrepentimientos 45/25/10', () => {
+test('Matriz demostrativa E1/E2/E3 tiene E3 como ganadora y arrepentimientos 45/25/10', () => {
   const def = adaptSimulationResponse(DEMO_SIMULATION_CASES.default);
-  assert.deepEqual(def.ganadoras, ['C']);
-  assert.equal(def.resultados.find((r) => r.estrategiaId === 'A').peorArrepentimiento, 45);
-  assert.equal(def.resultados.find((r) => r.estrategiaId === 'B').peorArrepentimiento, 25);
-  assert.equal(def.resultados.find((r) => r.estrategiaId === 'C').peorArrepentimiento, 10);
+  assert.deepEqual(def.ganadoras, ['E3']);
+  assert.equal(def.resultados.find((r) => r.estrategiaId === 'E1').peorArrepentimiento, 45);
+  assert.equal(def.resultados.find((r) => r.estrategiaId === 'E2').peorArrepentimiento, 25);
+  assert.equal(def.resultados.find((r) => r.estrategiaId === 'E3').peorArrepentimiento, 10);
 });
 
 test('adaptCatalog ordena los pasos de cada estrategia por orden', () => {
@@ -119,7 +119,7 @@ for (const [name, mutate] of [
   ['puntaje texto', x => x.resultados[0].puntajes.seco = '0'],
   ['puntaje fuera de rango', x => x.resultados[0].puntajes.seco = 101],
   ['ganadora inexistente', x => x.ganadoras = ['Z']],
-  ['ganadora incorrecta', x => x.ganadoras = ['A']],
+  ['ganadora incorrecta', x => x.ganadoras = ['E1']],
   ['incompleto con ganadora', x => x.estado = 'incompleto'],
 ]) test(`rechaza ${name}`, () => {
   const raw = structuredClone(DEMO_SIMULATION_CASES.default); mutate(raw);

@@ -129,6 +129,7 @@ export function adaptSimulationResponse(raw) {
     if (r.elegible !== null && typeof r.elegible !== 'boolean') fail();
     const derivedState = expectedEligibilityState(r.elegible);
     if (r.elegibilidadEstado !== undefined && r.elegibilidadEstado !== derivedState) fail();
+    if (r.advertencias !== undefined && (!Array.isArray(r.advertencias) || r.advertencias.some(aviso => typeof aviso !== 'string' || !aviso.trim()))) fail();
     ids.add(r.estrategiaId);
     for (const s of escenarios) {
       const v = r.puntajes?.[s];
@@ -165,6 +166,7 @@ export function adaptSimulationResponse(raw) {
     motivoPeorArrepentimiento: item.motivoPeorArrepentimiento ?? null,
     motivosNoCalculable: item.motivosNoCalculable ?? {},
     motivosDescarte: Array.isArray(item.motivosDescarte) ? item.motivosDescarte : [],
+    advertencias: item.advertencias ? [...item.advertencias] : [],
   }));
 
   return {

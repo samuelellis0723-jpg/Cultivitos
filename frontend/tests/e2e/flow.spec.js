@@ -37,7 +37,7 @@ test('guardar, recargar y consultar sin API disponible', async ({ page }) => {
   await page.reload();
   await page.getByRole('button', { name: 'Consultar resultado guardado' }).click();
   await expect(page.getByRole('heading', { name: 'Resultado histórico guardado' })).toBeVisible();
-  await expect(page.getByText('Selección guardada: C')).toBeVisible();
+  await expect(page.getByText('Selección guardada: E3')).toBeVisible();
 });
 test('teclado y modal móvil', async ({ page }, info) => {
   await setup(page, DEMO_SIMULATION_CASES.default);

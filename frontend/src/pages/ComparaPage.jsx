@@ -14,6 +14,7 @@ import {
   deleteSavedComparison,
   downloadJsonFile,
   loadSavedComparisons,
+  isLegacyDemoComparison,
   saveComparison,
 } from '../services/storage.js';
 
@@ -61,6 +62,7 @@ export default function ComparaPage() {
       {savedList.map(item => (
         <div key={item.id} className="fv-row-wrap">
           <span>{new Date(item.savedAt).toLocaleString('es-CR')} · {item.dataMode === 'demo' ? 'Modo demostración' : 'Conexión API'} · <DataOriginBadge origin={item.simulation?.evidencia?.origen} /></span>
+          {isLegacyDemoComparison(item) ? <span>Demo histórica · formato A/B/C</span> : null}
           <button type="button" className="fv-btn fv-btn-secondary" onClick={() => setHistorical(item)}>
             Consultar resultado guardado
           </button>
@@ -75,6 +77,9 @@ export default function ComparaPage() {
         <h1>Resultado histórico guardado</h1>
         <p>Guardado el {new Date(historical.savedAt).toLocaleString('es-CR')}. No es una evaluación actual.</p>
         <DataOriginBadge origin={result.evidencia.origen} />
+        {isLegacyDemoComparison(historical) ? (
+          <p role="note">Demostración histórica en formato A/B/C. Se conservan sus identificadores originales; las nuevas demostraciones usan E1/E2/E3. No se ha recalculado ni convertido este resultado.</p>
+        ) : null}
         <p>Estado guardado: {result.estado}. {result.explicacion}</p>
         <button className="fv-btn fv-btn-secondary" onClick={() => setHistorical(null)}>Volver a comparación actual</button>
         <p>Selección guardada: {historical.selectedStrategyId || 'ninguna'}</p>

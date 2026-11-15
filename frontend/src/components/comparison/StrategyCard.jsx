@@ -7,6 +7,12 @@ const SCENARIO_LABELS = {
   humedo: 'Más lluvioso',
 };
 
+function readableWarning(warning) {
+  const field = /^FINCA_DESCONOCIDA: (suelo|drenaje|riego);/.exec(warning)?.[1];
+  if (field) return `No conocemos el ${field} de la finca. Este dato faltante no constituye una restricción comprobada.`;
+  return warning;
+}
+
 export default function StrategyCard({
   resultado,
   estrategia,
@@ -90,6 +96,15 @@ export default function StrategyCard({
         <p className="fv-hint" style={{ marginTop: '8px', color: 'var(--fv-error-text)' }}>
           La estrategia "{resultado.estrategiaId}" vino en la respuesta de simulación pero no existe en el catálogo cargado.
         </p>
+      ) : null}
+
+      {resultado.advertencias?.length > 0 ? (
+        <section className="fv-card-soft" aria-label={`Advertencias de ${title}`} style={{ marginTop: '12px' }}>
+          <h3>Advertencias</h3>
+          <ul>
+            {resultado.advertencias.map((aviso, index) => <li key={index}>{readableWarning(aviso)}</li>)}
+          </ul>
+        </section>
       ) : null}
 
       {isDiscarded ? (

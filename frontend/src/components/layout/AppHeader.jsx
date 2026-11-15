@@ -59,8 +59,8 @@ export default function AppHeader() {
                 onChange={(e) => setDemoCase(e.target.value)}
                 aria-label="Seleccionar caso de prueba en modo demostración"
               >
-                <option value="default">Matriz A / B / C (gana C)</option>
-                <option value="tie">Empate minimax (B y C)</option>
+                <option value="default">Matriz E1 / E2 / E3 (gana E3)</option>
+                <option value="tie">Empate minimax (E2 y E3)</option>
                 <option value="incomplete">Incompleto (null + motivos)</option>
                 <option value="no_options">Sin opciones (descartes)</option>
               </select>

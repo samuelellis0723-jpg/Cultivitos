@@ -19,12 +19,12 @@ npm run dev:backend
 
 ```bash
 # Terminal 2
-npm run dev:frontend
+VITE_HISTORY_START=20150101 VITE_HISTORY_END=20241231 npm run dev:frontend
 ```
 
 Abre http://localhost:5173. Debe mostrar «Conectado · fieldverse-api». Backend: http://127.0.0.1:3000/api/health. Vite redirige `/api` al backend: no hace falta configurar CORS para este flujo. No abrir index.html directamente.
 
-Los valores por defecto funcionan sin archivos .env. Para cambiarlos copia `backend/.env.example` a `backend/.env` y `frontend/.env.example` a `frontend/.env`. Reinicia ambos procesos si cambias configuración. Si cambias PORT, ajusta también API_PROXY_TARGET. No poner secretos en variables VITE_* ni en Git.
+La aplicación arranca sin archivos .env. El historial requiere un período explícito, como el piloto 2015–2024 del comando anterior; sin él muestra configuración pendiente y no consulta historial. Para configurar mediante archivos locales copia `backend/.env.example` a `backend/.env` y `frontend/.env.example` a `frontend/.env`. Reinicia ambos procesos si cambias configuración. Si cambias PORT, ajusta también API_PROXY_TARGET. No poner secretos en variables VITE_* ni en Git.
 
 ## Ramas y propietarios
 
@@ -59,10 +59,12 @@ Una rama no aísla dos agentes ejecutándose en la misma carpeta. Usar clones o 
 
 ```bash
 npm test
-npm run build
+VITE_HISTORY_START=20150101 VITE_HISTORY_END=20241231 npm run build --prefix frontend
 ```
 
-`npm run build` genera frontend/dist. `npm run preview --prefix frontend` solo previsualiza archivos estáticos; no incluye el proxy de desarrollo. Un despliegue debe servir `/api` desde Express mediante proxy del hosting, además de redirigir rutas de React a index.html. No hay despliegue configurado todavía.
+Vite incorpora `VITE_HISTORY_START` y `VITE_HISTORY_END` durante la compilación. Configurarlas solo al iniciar Express no cambia el bundle: hay que recompilar. No se selecciona ubicación automáticamente.
+
+El comando genera `frontend/dist`. Para servirlo con API en el mismo origen: `SERVE_STATIC_FRONTEND=1 node backend/src/server.js`. En desarrollo las variables pueden pasarse al arrancar Vite, como arriba, o configurarse según `frontend/.env.example`. `npm run preview --prefix frontend` solo previsualiza archivos estáticos; no incluye el proxy de desarrollo. Un despliegue debe servir `/api` desde Express mediante proxy del hosting, además de redirigir rutas de React a index.html. No hay despliegue configurado todavía.
 
 ## Estado real
 

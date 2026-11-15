@@ -33,10 +33,13 @@ Ruta `/api/*` inexistente → `404` JSON con `error.code` y `error.message` (nun
 
 Coordenadas: latitud `[-90, 90]`, longitud `[-180, 180]`, `mesInicio` entero `1–12`, `prioridad`: `equilibrio` / `agua` / `suelo`. `modo` acepta `"real"` (por defecto) o `"demo"`; `"prueba_sintetica"` se rechaza con `400`.
 
+`evidenciaAtributos` enviado por HTTP se ignora: una petición válida conserva respuesta 200. Nunca se utiliza como evidencia confiable. Esto es distinto del rechazo 400 de `modo: "prueba_sintetica"`.
+
 ## Ajuste D10: diagnóstico de elegibilidad
 
 Cada elemento de `resultados` distingue explícitamente elegibilidad evaluada de desconocida/no evaluable:
 
+- `advertencias`: `string[]` de avisos por estrategia, incluidos datos de finca desconocidos y el carácter experimental de D20/D22. El frontend los conserva en estado, guardado, recarga y exportación, y los muestra sin convertirlos en descartes. En registros antiguos el campo puede faltar y se interpreta como `[]`.
 - `elegible`: `boolean | null` (`true` = elegible, `false` = descartada, `null` = no evaluable).
 - `elegibilidadEstado`: `"elegible"` | `"descartada"` | `"no_evaluable"` (coherente con `elegible`).
 - Cuando `elegible === null`, `peorArrepentimiento` es `null` y los motivos van en `motivosNoCalculable` y `motivoPeorArrepentimiento` (nunca se fuerza `elegible: true` ni se invoca Minimax con datos artificiales, ni se reporta `sin_opciones`).
