@@ -1,0 +1,12 @@
+{
+  "finca": {
+    "latitude": 10.63,
+    "longitude": -85.44,
+    "suelo": "desconocido",
+    "drenaje": "desconocido",
+    "riego": "desconocido",
+    "cultivosAnteriores": [],
+    "mesInicio": 5,
+    "prioridad": "equilibrio"
+  }
+}

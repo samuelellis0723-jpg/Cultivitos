@@ -1,22 +1,19 @@
 import { calcularMinimaxRegret, ErrorEntradaDominio, CODIGOS_ERROR } from '../../domain/simulation/minimax-regret.js';
 import { getNasaHistoricalClimateSeries } from '../nasa/nasa.service.js';
 import catalogoService from '../catalog/catalog.js';
+import { generarExplicacionIA } from '../ai/openai.service.js';
 
 const ESCENARIOS = ['habitual', 'seco', 'humedo'];
-
-// Variables climáticas esenciales según el contrato de dominio (§5.2)
 const VARIABLES_CLIMA_REQUERIDAS = ['precipitacion', 'temperaturaMedia', 'temperaturaMaxima'];
 
-// Matriz ficticia del docs/contrato-api.md — SOLO para modo demo
 const MATRIZ_DEMO = {
-  E1: { habitual: 90, seco: 35, humedo: 55 },  // Maíz → Frijol
-  E2: { habitual: 75, seco: 80, humedo: 50 },  // Maíz → Sorgo
-  E3: { habitual: 80, seco: 70, humedo: 75 },  // Sorgo → Frijol
+  E1: { habitual: 90, seco: 35, humedo: 55 },
+  E2: { habitual: 75, seco: 80, humedo: 50 },
+  E3: { habitual: 80, seco: 70, humedo: 75 },
 };
 
 function esNumero(x) { return typeof x === 'number' && Number.isFinite(x); }
 
-// Valida los metadatos esenciales del objeto clima (contrato §5.2). Devuelve lista de faltantes.
 function validarClima(clima) {
   if (!clima || typeof clima !== 'object') return ['clima: sin datos'];
   const faltantes = [];
@@ -64,14 +61,11 @@ function validarFinca(finca, catalogo) {
   }
 }
 
-// PUNTO ÚNICO DE CONEXIÓN con las reglas de dominio de Hellen (D5/D7).
-// Cuando publiquen las reglas de elegibilidad y puntuación, este es el único lugar a modificar.
 function armarEstrategiasParaMotor(catalogo, modo) {
   return (catalogo.estrategias ?? []).map((e) => {
     if (modo === 'demo') {
       return { id: e.id, elegible: true, puntuaciones: MATRIZ_DEMO[e.id] ?? null };
     }
-    // Reglas de puntuación pendientes (D7): null = no calculable, jamás 0.
     return {
       id: e.id,
       elegible: true,
@@ -84,7 +78,7 @@ function mapearResultados(resultados) {
   return resultados.map((r) => ({
     estrategiaId: r.estrategiaId,
     elegible: r.elegible,
-    puntajes: r.puntuaciones,                       // puntuaciones -> puntajes (contrato público)
+    puntajes: r.puntuaciones,
     peorArrepentimiento: r.peorArrepentimiento,
     motivoPeorArrepentimiento: r.motivoPeorArrepentimiento,
     motivosNoCalculable: r.motivosNoCalculable,
@@ -115,33 +109,46 @@ export async function simular({ finca, modo } = {}) {
   const motor = calcularMinimaxRegret(entrada);
 
   const estado = esDemo ? 'demo' : motor.estado;
-
-  // El origen de la evidencia refleja de dónde salieron realmente los datos
   const origenDatos = clima?.fuentes?.[0]?.origen ?? 'live';
+  const resultadosMapeados = mapearResultados(motor.resultados);
+  const datosFaltantes = esDemo
+    ? []
+    : [...faltantesClima, 'Reglas de puntuación agronómica (pendiente Hellen, D7).'];
+
+  const explicacionBase = esDemo
+    ? 'Demostración con matriz ficticia del contrato. Los valores no provienen de NASA ni de datos reales.'
+    : estado === 'incompleto'
+      ? 'Simulación incompleta: faltan las reglas de puntuación agronómica o datos climáticos esenciales. No se declara ganadora.'
+      : 'Simulación calculada con el motor minimax regret.';
+
+  // Llamada a OpenAI con guardrails
+  const iaRespuesta = await generarExplicacionIA({
+    estado,
+    prioridadFinca: finca.prioridad,
+    resultados: resultadosMapeados,
+    ganadoras: motor.ganadoras,
+    peorArrepentimientoMinimo: motor.peorArrepentimientoMinimo,
+    datosFaltantes,
+    explicacionBase
+  });
 
   return {
     estado,
     escenarios: motor.escenarios,
     clima,
-    resultados: mapearResultados(motor.resultados),
+    resultados: resultadosMapeados,
     descartes: motor.descartes,
     ganadoras: motor.ganadoras,
     peorArrepentimientoMinimo: motor.peorArrepentimientoMinimo,
     mejoresPorEscenario: motor.mejoresPorEscenario,
-    explicacion:
-      esDemo
-        ? 'Demostración con matriz ficticia del contrato. Los valores no provienen de NASA ni de datos reales.'
-        : estado === 'incompleto'
-          ? 'Simulación incompleta: faltan las reglas de puntuación agronómica o datos climáticos esenciales. No se declara ganadora.'
-          : 'Simulación calculada con el motor minimax regret.',
+    explicacion: iaRespuesta.explicacionIA,
     evidencia: {
       origen: esDemo ? 'demo' : origenDatos,
+      iaOrigen: iaRespuesta.origen,
       supuestos: esDemo
         ? ['Matriz ficticia del docs/contrato-api.md para verificar el algoritmo.']
         : ['Reglas de puntuación agronómica pendientes (D7). Las puntuaciones se reportan como no calculables.'],
-      datosFaltantes: esDemo
-        ? []
-        : [...faltantesClima, 'Reglas de puntuación agronómica (pendiente Hellen, D7).'],
+      datosFaltantes,
       catalogoVersion: catalogo.version,
       motorVersion: 'minimax-regret v1',
       reglasVersion: 'no-implementado',
