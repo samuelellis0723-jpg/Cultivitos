@@ -1,0 +1,60 @@
+:root {
+  /* Surface & Canvas */
+  --fv-bg: #f2fcf0;
+  --fv-header-bg: rgba(245, 239, 235, 0.95);
+  --fv-surface-lowest: #ffffff;
+  --fv-surface-low: #ecf6eb;
+  --fv-surface-mid: #e6f1e5;
+  --fv-surface-high: #e1ebdf;
+  --fv-surface-variant: #dbe5da;
+
+  /* Text */
+  --fv-text: #151e17;
+  --fv-text-muted: #424842;
+  --fv-outline: #586058;
+
+  /* Brand & Actions */
+  --fv-primary-deep: #031e0e;
+  --fv-primary: #183321;
+  --fv-primary-hover: #366942;
+  --fv-on-primary: #ffffff;
+  --fv-selected-bg: #b5edbc;
+  --fv-selected-text: #00210b;
+  --fv-primary-fixed: #caebd0;
+
+  /* Semantic & Earth Accents */
+  --fv-earth: #8c6a3e;
+  --fv-earth-bg: #fff3e3;
+  --fv-earth-text: #412802;
+  --fv-sky: #4a6b7c;
+  --fv-sky-bg: #e8f1f5;
+  --fv-error: #ba1a1a;
+  --fv-error-bg: #ffdad6;
+  --fv-error-text: #93000a;
+
+  /* Borders & Hairlines */
+  --fv-border: #c2c8c0;
+  --fv-hairline: rgba(23, 32, 25, 0.12);
+  --fv-shadow-sm: 0 1px 3px rgba(21, 30, 23, 0.06);
+  --fv-shadow-lg: 0 12px 32px -8px rgba(21, 30, 23, 0.12);
+
+  /* Typography */
+  --fv-font-display: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --fv-font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+
+  /* Radii */
+  --fv-radius-card: 8px;
+  --fv-radius-control: 4px;
+  --fv-radius-pill: 9999px;
+
+  /* Spacing (8 / 16 / 24 / 32 / 48) */
+  --fv-space-1: 8px;
+  --fv-space-2: 16px;
+  --fv-space-3: 24px;
+  --fv-space-4: 32px;
+  --fv-space-6: 48px;
+
+  /* Layout */
+  --fv-max-width: 1320px;
+  --fv-header-height: 76px;
+}

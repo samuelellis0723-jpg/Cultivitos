@@ -1,0 +1,81 @@
+/* Motion tokens & transitions */
+.fv-step-enter {
+  animation: fvFadeSlide 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fvFadeSlide {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fv-btn,
+.fv-step-link,
+.fv-strategy-card,
+.fv-tab-btn,
+.fv-accordion summary {
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 180ms ease;
+}
+
+.fv-score-bar-fill {
+  transition: width 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fv-accordion-chevron {
+  transition: transform 200ms ease;
+}
+
+details[open] .fv-accordion-chevron {
+  transform: rotate(180deg);
+}
+
+.fv-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid var(--fv-border);
+  border-top-color: var(--fv-primary);
+  border-radius: 50%;
+  animation: fvSpin 800ms linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes fvSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .fv-step-enter {
+    animation: none;
+  }
+
+  .fv-btn,
+  .fv-step-link,
+  .fv-strategy-card,
+  .fv-tab-btn,
+  .fv-accordion summary,
+  .fv-score-bar-fill,
+  .fv-accordion-chevron {
+    transition: none;
+  }
+
+  .fv-spinner {
+    animation: none;
+    border-top-color: var(--fv-primary);
+    border-right-color: var(--fv-primary);
+  }
+}

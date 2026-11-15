@@ -1,0 +1,41 @@
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 12pt;
+  }
+
+  .fv-header,
+  .fv-flow-bar,
+  .fv-demo-bar,
+  .fv-no-print,
+  .fv-btn-print-hide {
+    display: none !important;
+  }
+
+  .fv-main {
+    max-width: 100%;
+    padding: 0;
+  }
+
+  .fv-compara-grid {
+    display: block !important;
+  }
+
+  .fv-card,
+  .fv-strategy-card,
+  .fv-evidence-card {
+    box-shadow: none !important;
+    border: 1px solid #999999 !important;
+    break-inside: avoid;
+    margin-bottom: 16px;
+  }
+
+  details.fv-accordion {
+    border: 1px solid #cccccc;
+  }
+
+  details.fv-accordion > summary ~ * {
+    display: block !important;
+  }
+}
