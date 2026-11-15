@@ -1,7 +1,9 @@
 import { Router } from 'express';
-import { getClimateHistory } from '../controllers/climate.controller.js';
+import { createClimateHistoryHandler } from '../controllers/climate.controller.js';
 
-const router = Router();
-router.get('/history', getClimateHistory);
-
-export default router;
+export function createClimateRouter(getHistory) {
+  const router = Router();
+  router.get('/history', createClimateHistoryHandler(getHistory));
+  return router;
+}
+export default createClimateRouter();
