@@ -1,0 +1,148 @@
+{
+  "version": "1.0.0-piloto",
+  "generado": "2026-11-14",
+  "localidadPiloto": {
+    "id": "guanacaste_cr",
+    "nombre": "Liberia / Cañas, Guanacaste",
+    "pais": "Costa Rica",
+    "fuenteId": "src_nasa_power"
+  },
+  "fuentes": [
+    {
+      "id": "src_nasa_power",
+      "tipo": "dataset",
+      "titulo": "NASA POWER Daily Point API (AG Community)",
+      "url": "https://power.larc.nasa.gov/api/temporal/daily/point",
+      "fecha": "2026-11-14",
+      "notas": "Series históricas diarias 2015–2024 (precipitación, T2M, T2M_MAX)."
+    },
+    {
+      "id": "src_piloto_fao",
+      "tipo": "institucional",
+      "titulo": "Calendarios agrícolas base Mesoamérica / Costa Rica (FAO / MAG)",
+      "url": null,
+      "fecha": "2026-11-14",
+      "notas": "Ventanas referenciales para maíz, frijol y sorgo en zona seca/transición."
+    }
+  ],
+  "opcionesFinca": {
+    "suelo": [
+      { "valor": "desconocido", "etiqueta": "No lo sé / Desconocido" },
+      { "valor": "arenoso", "etiqueta": "Arenoso" },
+      { "valor": "franco", "etiqueta": "Franco" },
+      { "valor": "arcilloso", "etiqueta": "Arcilloso" },
+      { "valor": "limoso", "etiqueta": "Limoso" }
+    ],
+    "drenaje": [
+      { "valor": "desconocido", "etiqueta": "No lo sé / Desconocido" },
+      { "valor": "pobre", "etiqueta": "Pobre" },
+      { "valor": "moderado", "etiqueta": "Moderado" },
+      { "valor": "bueno", "etiqueta": "Bueno" },
+      { "valor": "excesivo", "etiqueta": "Excesivo" }
+    ],
+    "riego": [
+      { "valor": "desconocido", "etiqueta": "No lo sé / Desconocido" },
+      { "valor": "secano", "etiqueta": "Secano (solo lluvia)" },
+      { "valor": "riego_apoyo", "etiqueta": "Riego de apoyo" },
+      { "valor": "riego_completo", "etiqueta": "Riego completo" }
+    ],
+    "prioridad": [
+      { "valor": "equilibrio", "etiqueta": "Equilibrio" },
+      { "valor": "agua", "etiqueta": "Agua (tolerancia a déficit hídrico)" },
+      { "valor": "suelo", "etiqueta": "Suelo (conservación y rotación)" }
+    ],
+    "mesInicio": [
+      { "valor": 1, "etiqueta": "Enero" },
+      { "valor": 2, "etiqueta": "Febrero" },
+      { "valor": 3, "etiqueta": "Marzo" },
+      { "valor": 4, "etiqueta": "Abril" },
+      { "valor": 5, "etiqueta": "Mayo" },
+      { "valor": 6, "etiqueta": "Junio" },
+      { "valor": 7, "etiqueta": "Julio" },
+      { "valor": 8, "etiqueta": "Agosto" },
+      { "valor": 9, "etiqueta": "Septiembre" },
+      { "valor": 10, "etiqueta": "Octubre" },
+      { "valor": 11, "etiqueta": "Noviembre" },
+      { "valor": 12, "etiqueta": "Diciembre" }
+    ]
+  },
+  "cultivos": [
+    {
+      "id": "maiz",
+      "nombre": "Maíz",
+      "ciclos": [
+        {
+          "id": "maiz_primera",
+          "cultivoId": "maiz",
+          "ventanaSiembra": { "inicioMes": 5, "finMes": 6 },
+          "duracionMeses": 4,
+          "fuenteId": "src_piloto_fao"
+        }
+      ],
+      "fuenteId": "src_piloto_fao"
+    },
+    {
+      "id": "frijol",
+      "nombre": "Frijol",
+      "ciclos": [
+        {
+          "id": "frijol_postrera",
+          "cultivoId": "frijol",
+          "ventanaSiembra": { "inicioMes": 9, "finMes": 10 },
+          "duracionMeses": 3,
+          "fuenteId": "src_piloto_fao"
+        }
+      ],
+      "fuenteId": "src_piloto_fao"
+    },
+    {
+      "id": "sorgo",
+      "nombre": "Sorgo",
+      "ciclos": [
+        {
+          "id": "sorgo_postrera",
+          "cultivoId": "sorgo",
+          "ventanaSiembra": { "inicioMes": 8, "finMes": 10 },
+          "duracionMeses": 4,
+          "fuenteId": "src_piloto_fao"
+        }
+      ],
+      "fuenteId": "src_piloto_fao"
+    }
+  ],
+  "estrategias": [
+    {
+      "id": "E1",
+      "nombre": "Rotación Maíz → Frijol",
+      "descripcion": "Siembra de maíz en primera seguida de fijación de nitrógeno con frijol en postrera.",
+      "pasos": [
+        { "orden": 1, "cultivoId": "maiz", "cicloId": "maiz_primera" },
+        { "orden": 2, "cultivoId": "frijol", "cicloId": "frijol_postrera" }
+      ],
+      "parametrosPuntuacion": [],
+      "fuenteId": "src_piloto_fao"
+    },
+    {
+      "id": "E2",
+      "nombre": "Rotación Maíz → Sorgo",
+      "descripcion": "Siembra de maíz en primera seguida de sorgo tolerante a déficit hídrico en postrera.",
+      "pasos": [
+        { "orden": 1, "cultivoId": "maiz", "cicloId": "maiz_primera" },
+        { "orden": 2, "cultivoId": "sorgo", "cicloId": "sorgo_postrera" }
+      ],
+      "parametrosPuntuacion": [],
+      "fuenteId": "src_piloto_fao"
+    },
+    {
+      "id": "E3",
+      "nombre": "Rotación Sorgo → Frijol",
+      "descripcion": "Cereal resiliente a sequía temprana seguido de leguminosa de ciclo corto.",
+      "pasos": [
+        { "orden": 1, "cultivoId": "sorgo", "cicloId": "sorgo_postrera" },
+        { "orden": 2, "cultivoId": "frijol", "cicloId": "frijol_postrera" }
+      ],
+      "parametrosPuntuacion": [],
+      "fuenteId": "src_piloto_fao"
+    }
+  ]
+}
