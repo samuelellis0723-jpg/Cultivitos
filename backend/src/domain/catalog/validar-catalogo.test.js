@@ -1,3 +1,4 @@
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CODIGOS_ERROR_CATALOGO, validarCatalogo } from './validar-catalogo.js';
@@ -41,7 +42,9 @@ function crearCatalogoValido() {
         id: 'cultivo-prueba-b',
         nombre: 'Cultivo ficticio B',
         fuenteId: 'fuente-prueba-1',
-        ciclos: [crearCicloPrueba('ciclo-prueba-b1', 'cultivo-prueba-b', 7, 9)],
+        ciclos: [
+          crearCicloPrueba('ciclo-prueba-b1', 'cultivo-prueba-b', 7, 9),
+        ],
       },
     ],
     estrategias: [
@@ -50,8 +53,16 @@ function crearCatalogoValido() {
         nombre: 'Estrategia ficticia 1',
         descripcion: 'Combinación ficticia para comprobar la estructura.',
         pasos: [
-          { orden: 1, cultivoId: 'cultivo-prueba-a', cicloId: 'ciclo-prueba-a1' },
-          { orden: 2, cultivoId: 'cultivo-prueba-b', cicloId: 'ciclo-prueba-b1' },
+          {
+            orden: 1,
+            cultivoId: 'cultivo-prueba-a',
+            cicloId: 'ciclo-prueba-a1',
+          },
+          {
+            orden: 2,
+            cultivoId: 'cultivo-prueba-b',
+            cicloId: 'ciclo-prueba-b1',
+          },
         ],
         parametrosPuntuacion: [
           {
@@ -66,22 +77,32 @@ function crearCatalogoValido() {
       },
     ],
     opcionesFinca: {
-      suelo: [{ valor: 'desconocido', etiqueta: 'Desconocido (prueba)' }],
-      drenaje: [{ valor: 'desconocido', etiqueta: 'Desconocido (prueba)' }],
-      riego: [{ valor: 'desconocido', etiqueta: 'Desconocido (prueba)' }],
+      suelo: [
+        { valor: 'desconocido', etiqueta: 'Desconocido (prueba)' },
+      ],
+      drenaje: [
+        { valor: 'desconocido', etiqueta: 'Desconocido (prueba)' },
+      ],
+      riego: [
+        { valor: 'desconocido', etiqueta: 'Desconocido (prueba)' },
+      ],
       prioridad: [
         { valor: 'equilibrio', etiqueta: 'Equilibrio (prueba)' },
         { valor: 'agua', etiqueta: 'Agua (prueba)' },
         { valor: 'suelo', etiqueta: 'Suelo (prueba)' },
       ],
-      mesInicio: [{ valor: 1, etiqueta: 'Enero (prueba)' }],
+      mesInicio: [
+        { valor: 1, etiqueta: 'Enero (prueba)' },
+      ],
     },
   };
 }
 
 function buscarError(resultado, codigo, campoParcial) {
   return resultado.errores.find(
-    (error) => error.codigo === codigo && error.campo.includes(campoParcial)
+    (error) =>
+      error.codigo === codigo &&
+      error.campo.includes(campoParcial)
   );
 }
 
@@ -92,6 +113,7 @@ function assertError(resultado, codigo, campoParcial) {
     error,
     `Se esperaba ${codigo} en "${campoParcial}". Errores: ${JSON.stringify(resultado.errores)}`
   );
+
   assert.equal(typeof error.motivo, 'string');
   assert.ok(error.motivo.length > 0);
 
@@ -99,7 +121,11 @@ function assertError(resultado, codigo, campoParcial) {
 }
 
 function congelarProfundo(valor) {
-  if (valor !== null && typeof valor === 'object' && !Object.isFrozen(valor)) {
+  if (
+    valor !== null &&
+    typeof valor === 'object' &&
+    !Object.isFrozen(valor)
+  ) {
     Object.freeze(valor);
 
     for (const clave of Object.keys(valor)) {
@@ -109,6 +135,10 @@ function congelarProfundo(valor) {
 
   return valor;
 }
+
+// ============================================================
+// PRUEBAS ORIGINALES DEL VALIDADOR
+// ============================================================
 
 test('acepta un catálogo estructuralmente válido con datos ficticios', () => {
   const resultado = validarCatalogo(crearCatalogoValido());
@@ -121,7 +151,11 @@ test('exige una versión no vacía', () => {
   const sinVersion = crearCatalogoValido();
   delete sinVersion.version;
 
-  assertError(validarCatalogo(sinVersion), CODIGOS_ERROR_CATALOGO.CAMPO_REQUERIDO, 'version');
+  assertError(
+    validarCatalogo(sinVersion),
+    CODIGOS_ERROR_CATALOGO.CAMPO_REQUERIDO,
+    'version'
+  );
 
   const versionVacia = crearCatalogoValido();
   versionVacia.version = '   ';
@@ -153,7 +187,9 @@ test('rechaza identificadores duplicados en fuentes, cultivos, ciclos, estrategi
   );
 
   const cultivoDuplicado = crearCatalogoValido();
-  cultivoDuplicado.cultivos.push(structuredClone(cultivoDuplicado.cultivos[0]));
+  cultivoDuplicado.cultivos.push(
+    structuredClone(cultivoDuplicado.cultivos[0])
+  );
 
   assertError(
     validarCatalogo(cultivoDuplicado),
@@ -173,7 +209,9 @@ test('rechaza identificadores duplicados en fuentes, cultivos, ciclos, estrategi
   );
 
   const estrategiaDuplicada = crearCatalogoValido();
-  estrategiaDuplicada.estrategias.push(structuredClone(estrategiaDuplicada.estrategias[0]));
+  estrategiaDuplicada.estrategias.push(
+    structuredClone(estrategiaDuplicada.estrategias[0])
+  );
 
   assertError(
     validarCatalogo(estrategiaDuplicada),
@@ -183,7 +221,9 @@ test('rechaza identificadores duplicados en fuentes, cultivos, ciclos, estrategi
 
   const parametroDuplicado = crearCatalogoValido();
   parametroDuplicado.estrategias[0].parametrosPuntuacion.push(
-    structuredClone(parametroDuplicado.estrategias[0].parametrosPuntuacion[0])
+    structuredClone(
+      parametroDuplicado.estrategias[0].parametrosPuntuacion[0]
+    )
   );
 
   assertError(
@@ -222,7 +262,8 @@ test('rechaza referencias a fuentes inexistentes en cultivos, ciclos, estrategia
   );
 
   const parametroSinFuente = crearCatalogoValido();
-  parametroSinFuente.estrategias[0].parametrosPuntuacion[0].fuenteId = 'fuente-inexistente';
+  parametroSinFuente.estrategias[0].parametrosPuntuacion[0].fuenteId =
+    'fuente-inexistente';
 
   assertError(
     validarCatalogo(parametroSinFuente),
@@ -233,7 +274,8 @@ test('rechaza referencias a fuentes inexistentes en cultivos, ciclos, estrategia
 
 test('rechaza cultivos y ciclos inexistentes en los pasos de una estrategia', () => {
   const cultivoInexistente = crearCatalogoValido();
-  cultivoInexistente.estrategias[0].pasos[0].cultivoId = 'cultivo-inexistente';
+  cultivoInexistente.estrategias[0].pasos[0].cultivoId =
+    'cultivo-inexistente';
 
   assertError(
     validarCatalogo(cultivoInexistente),
@@ -242,7 +284,8 @@ test('rechaza cultivos y ciclos inexistentes en los pasos de una estrategia', ()
   );
 
   const cicloInexistente = crearCatalogoValido();
-  cicloInexistente.estrategias[0].pasos[0].cicloId = 'ciclo-inexistente';
+  cicloInexistente.estrategias[0].pasos[0].cicloId =
+    'ciclo-inexistente';
 
   assertError(
     validarCatalogo(cicloInexistente),
@@ -253,7 +296,8 @@ test('rechaza cultivos y ciclos inexistentes en los pasos de una estrategia', ()
 
 test('rechaza ciclos asociados al cultivo incorrecto', () => {
   const cicloAnidadoIncorrecto = crearCatalogoValido();
-  cicloAnidadoIncorrecto.cultivos[0].ciclos[0].cultivoId = 'cultivo-prueba-b';
+  cicloAnidadoIncorrecto.cultivos[0].ciclos[0].cultivoId =
+    'cultivo-prueba-b';
 
   assertError(
     validarCatalogo(cicloAnidadoIncorrecto),
@@ -262,7 +306,8 @@ test('rechaza ciclos asociados al cultivo incorrecto', () => {
   );
 
   const pasoConCicloAjeno = crearCatalogoValido();
-  pasoConCicloAjeno.estrategias[0].pasos[1].cultivoId = 'cultivo-prueba-a';
+  pasoConCicloAjeno.estrategias[0].pasos[1].cultivoId =
+    'cultivo-prueba-a';
 
   assertError(
     validarCatalogo(pasoConCicloAjeno),
@@ -273,7 +318,9 @@ test('rechaza ciclos asociados al cultivo incorrecto', () => {
 
 test('exige exactamente dos pasos por estrategia', () => {
   const unPaso = crearCatalogoValido();
-  unPaso.estrategias[0].pasos = [unPaso.estrategias[0].pasos[0]];
+  unPaso.estrategias[0].pasos = [
+    unPaso.estrategias[0].pasos[0],
+  ];
 
   assertError(
     validarCatalogo(unPaso),
@@ -319,7 +366,10 @@ test('rechaza parámetros incompletos y conserva cero como valor válido', () =>
   const valido = validarCatalogo(crearCatalogoValido());
 
   assert.equal(valido.valido, true);
-  assert.equal(crearCatalogoValido().estrategias[0].parametrosPuntuacion[0].valor, 0);
+  assert.equal(
+    crearCatalogoValido().estrategias[0].parametrosPuntuacion[0].valor,
+    0
+  );
 
   const sinValor = crearCatalogoValido();
   delete sinValor.estrategias[0].parametrosPuntuacion[0].valor;
@@ -351,7 +401,8 @@ test('rechaza parámetros incompletos y conserva cero como valor válido', () =>
 
 test('rechaza valores de parámetro no finitos', () => {
   const conNaN = crearCatalogoValido();
-  conNaN.estrategias[0].parametrosPuntuacion[0].valor = Number.NaN;
+  conNaN.estrategias[0].parametrosPuntuacion[0].valor =
+    Number.NaN;
 
   assertError(
     validarCatalogo(conNaN),
@@ -360,7 +411,8 @@ test('rechaza valores de parámetro no finitos', () => {
   );
 
   const conInfinito = crearCatalogoValido();
-  conInfinito.estrategias[0].parametrosPuntuacion[0].valor = Number.POSITIVE_INFINITY;
+  conInfinito.estrategias[0].parametrosPuntuacion[0].valor =
+    Number.POSITIVE_INFINITY;
 
   assertError(
     validarCatalogo(conInfinito),
@@ -423,9 +475,24 @@ test('rechaza entradas malformadas sin lanzar excepciones', () => {
     'catalogo',
     {},
     { version: 'catalogo-prueba-0.0.0' },
-    { version: 'catalogo-prueba-0.0.0', fuentes: 'no', cultivos: [], estrategias: [] },
-    { version: 'catalogo-prueba-0.0.0', fuentes: [], cultivos: null, estrategias: [] },
-    { version: 'catalogo-prueba-0.0.0', fuentes: [], cultivos: [], estrategias: {} },
+    {
+      version: 'catalogo-prueba-0.0.0',
+      fuentes: 'no',
+      cultivos: [],
+      estrategias: [],
+    },
+    {
+      version: 'catalogo-prueba-0.0.0',
+      fuentes: [],
+      cultivos: null,
+      estrategias: [],
+    },
+    {
+      version: 'catalogo-prueba-0.0.0',
+      fuentes: [],
+      cultivos: [],
+      estrategias: {},
+    },
   ];
 
   for (const caso of casos) {
@@ -436,18 +503,34 @@ test('rechaza entradas malformadas sin lanzar excepciones', () => {
   }
 
   const raizInvalida = validarCatalogo(null);
-  assertError(raizInvalida, CODIGOS_ERROR_CATALOGO.ESTRUCTURA_INVALIDA, 'catalogo');
+
+  assertError(
+    raizInvalida,
+    CODIGOS_ERROR_CATALOGO.ESTRUCTURA_INVALIDA,
+    'catalogo'
+  );
 
   const fuenteNula = crearCatalogoValido();
   fuenteNula.fuentes.push(null);
-  assertError(validarCatalogo(fuenteNula), CODIGOS_ERROR_CATALOGO.TIPO_INVALIDO, 'fuentes[1]');
+
+  assertError(
+    validarCatalogo(fuenteNula),
+    CODIGOS_ERROR_CATALOGO.TIPO_INVALIDO,
+    'fuentes[1]'
+  );
 
   const cultivoNulo = crearCatalogoValido();
   cultivoNulo.cultivos.push(null);
-  assertError(validarCatalogo(cultivoNulo), CODIGOS_ERROR_CATALOGO.TIPO_INVALIDO, 'cultivos[2]');
+
+  assertError(
+    validarCatalogo(cultivoNulo),
+    CODIGOS_ERROR_CATALOGO.TIPO_INVALIDO,
+    'cultivos[2]'
+  );
 
   const estrategiaNula = crearCatalogoValido();
   estrategiaNula.estrategias.push(null);
+
   assertError(
     validarCatalogo(estrategiaNula),
     CODIGOS_ERROR_CATALOGO.TIPO_INVALIDO,
@@ -456,6 +539,7 @@ test('rechaza entradas malformadas sin lanzar excepciones', () => {
 
   const ciclosNulos = crearCatalogoValido();
   ciclosNulos.cultivos[0].ciclos = null;
+
   assertError(
     validarCatalogo(ciclosNulos),
     CODIGOS_ERROR_CATALOGO.CAMPO_REQUERIDO,
@@ -464,6 +548,7 @@ test('rechaza entradas malformadas sin lanzar excepciones', () => {
 
   const pasosNulos = crearCatalogoValido();
   pasosNulos.estrategias[0].pasos = null;
+
   assertError(
     validarCatalogo(pasosNulos),
     CODIGOS_ERROR_CATALOGO.CAMPO_REQUERIDO,
@@ -472,6 +557,7 @@ test('rechaza entradas malformadas sin lanzar excepciones', () => {
 
   const opcionesInvalidas = crearCatalogoValido();
   opcionesInvalidas.opcionesFinca = [];
+
   assertError(
     validarCatalogo(opcionesInvalidas),
     CODIGOS_ERROR_CATALOGO.TIPO_INVALIDO,
@@ -481,9 +567,18 @@ test('rechaza entradas malformadas sin lanzar excepciones', () => {
 
 test('no impone que los dos cultivos de una estrategia sean diferentes', () => {
   const catalogo = crearCatalogoValido();
+
   catalogo.estrategias[0].pasos = [
-    { orden: 1, cultivoId: 'cultivo-prueba-a', cicloId: 'ciclo-prueba-a1' },
-    { orden: 2, cultivoId: 'cultivo-prueba-a', cicloId: 'ciclo-prueba-a2' },
+    {
+      orden: 1,
+      cultivoId: 'cultivo-prueba-a',
+      cicloId: 'ciclo-prueba-a1',
+    },
+    {
+      orden: 2,
+      cultivoId: 'cultivo-prueba-a',
+      cicloId: 'ciclo-prueba-a2',
+    },
   ];
 
   const resultado = validarCatalogo(catalogo);
@@ -494,6 +589,7 @@ test('no impone que los dos cultivos de una estrategia sean diferentes', () => {
 
 test('no exige campos propuestos ni añade vocabulario no aprobado', () => {
   const catalogo = crearCatalogoValido();
+
   delete catalogo.generado;
   delete catalogo.localidadPiloto;
   delete catalogo.opcionesFinca;
@@ -502,6 +598,7 @@ test('no exige campos propuestos ni añade vocabulario no aprobado', () => {
   delete catalogo.fuentes[0].fecha;
   delete catalogo.fuentes[0].notas;
   delete catalogo.estrategias[0].descripcion;
+
   catalogo.cultivos[0].ciclos[0].duracionMeses = null;
 
   const resultado = validarCatalogo(catalogo);
@@ -512,14 +609,19 @@ test('no exige campos propuestos ni añade vocabulario no aprobado', () => {
 
 test('valida opcionesFinca solo con las reglas confirmadas', () => {
   const opcionPropuesta = crearCatalogoValido();
+
   opcionPropuesta.opcionesFinca.suelo.push({
     valor: 'arenoso',
     etiqueta: 'Arenoso (prueba)',
   });
 
-  assert.equal(validarCatalogo(opcionPropuesta).valido, true);
+  assert.equal(
+    validarCatalogo(opcionPropuesta).valido,
+    true
+  );
 
   const prioridadNoAprobada = crearCatalogoValido();
+
   prioridadNoAprobada.opcionesFinca.prioridad.push({
     valor: 'otra-prioridad',
     etiqueta: 'Otra prioridad (prueba)',
@@ -532,6 +634,7 @@ test('valida opcionesFinca solo con las reglas confirmadas', () => {
   );
 
   const opcionDuplicada = crearCatalogoValido();
+
   opcionDuplicada.opcionesFinca.suelo.push({
     valor: 'desconocido',
     etiqueta: 'Duplicado (prueba)',
@@ -564,7 +667,164 @@ test('inmutabilidad: no modifica la entrada, incluso si está congelada', () => 
   assert.equal(resultado.valido, true);
   assert.deepEqual(catalogo, copia);
 
-  resultado.errores.push({ codigo: 'PRUEBA', campo: 'prueba', motivo: 'mutación de salida' });
+  resultado.errores.push({
+    codigo: 'PRUEBA',
+    campo: 'prueba',
+    motivo: 'mutación de salida',
+  });
 
+  assert.deepEqual(catalogo, copia);
+});
+
+// ============================================================
+// NUEVAS PRUEBAS D17: DURACION EN DIAS
+// ============================================================
+
+test('D17: acepta duracionDias omitida por compatibilidad heredada', () => {
+  const catalogo = crearCatalogoValido();
+
+  const resultado = validarCatalogo(catalogo);
+
+  assert.equal(resultado.valido, true);
+  assert.deepEqual(resultado.errores, []);
+});
+
+test('D17: acepta duracionDias null como dato pendiente', () => {
+  const catalogo = crearCatalogoValido();
+
+  catalogo.cultivos[0].ciclos[0].duracionDias = null;
+
+  const resultado = validarCatalogo(catalogo);
+
+  assert.equal(resultado.valido, true);
+  assert.deepEqual(resultado.errores, []);
+});
+
+test('D17: acepta un rango de dias con enteros positivos', () => {
+  const catalogo = crearCatalogoValido();
+
+  catalogo.cultivos[0].ciclos[0].duracionDias = {
+    min: 60,
+    max: 90,
+  };
+
+  const resultado = validarCatalogo(catalogo);
+
+  assert.equal(resultado.valido, true);
+  assert.deepEqual(resultado.errores, []);
+});
+
+test('D17: acepta un rango de un solo dia', () => {
+  const catalogo = crearCatalogoValido();
+
+  catalogo.cultivos[0].ciclos[0].duracionDias = {
+    min: 1,
+    max: 1,
+  };
+
+  const resultado = validarCatalogo(catalogo);
+
+  assert.equal(resultado.valido, true);
+  assert.deepEqual(resultado.errores, []);
+});
+
+test('D17: rechaza minimo cero y valores negativos', () => {
+  const casos = [
+    { min: 0, max: 90 },
+    { min: -2, max: 90 },
+  ];
+
+  for (const duracionDias of casos) {
+    const catalogo = crearCatalogoValido();
+
+    catalogo.cultivos[0].ciclos[0].duracionDias =
+      duracionDias;
+
+    assertError(
+      validarCatalogo(catalogo),
+      CODIGOS_ERROR_CATALOGO.RANGO_INVALIDO,
+      'cultivos[0].ciclos[0].duracionDias'
+    );
+  }
+});
+
+test('D17: rechaza rangos invertidos', () => {
+  const catalogo = crearCatalogoValido();
+
+  catalogo.cultivos[0].ciclos[0].duracionDias = {
+    min: 91,
+    max: 90,
+  };
+
+  assertError(
+    validarCatalogo(catalogo),
+    CODIGOS_ERROR_CATALOGO.RANGO_INVALIDO,
+    'cultivos[0].ciclos[0].duracionDias'
+  );
+});
+
+test('D17: rechaza decimales, textos y limites ausentes', () => {
+  const casos = [
+    { min: 1.5, max: 90 },
+    { min: 1, max: 90.5 },
+    { min: '60', max: 90 },
+    { min: 60, max: '90' },
+    { min: 60 },
+    { max: 90 },
+    {},
+  ];
+
+  for (const duracionDias of casos) {
+    const catalogo = crearCatalogoValido();
+
+    catalogo.cultivos[0].ciclos[0].duracionDias =
+      duracionDias;
+
+    assertError(
+      validarCatalogo(catalogo),
+      CODIGOS_ERROR_CATALOGO.RANGO_INVALIDO,
+      'cultivos[0].ciclos[0].duracionDias'
+    );
+  }
+});
+
+test('D17: rechaza duracionDias con estructura incorrecta', () => {
+  const casos = [
+    [],
+    '60-90',
+    90,
+    true,
+  ];
+
+  for (const duracionDias of casos) {
+    const catalogo = crearCatalogoValido();
+
+    catalogo.cultivos[0].ciclos[0].duracionDias =
+      duracionDias;
+
+    assertError(
+      validarCatalogo(catalogo),
+      CODIGOS_ERROR_CATALOGO.TIPO_INVALIDO,
+      'cultivos[0].ciclos[0].duracionDias'
+    );
+  }
+});
+
+test('D17: no modifica el catalogo al validar duracionDias', () => {
+  const catalogo = crearCatalogoValido();
+
+  catalogo.cultivos[0].ciclos[0].duracionDias = {
+    min: 60,
+    max: 90,
+  };
+
+  const copia = structuredClone(catalogo);
+
+  congelarProfundo(catalogo);
+
+  const resultado = validarCatalogo(catalogo);
+
+  assert.equal(resultado.valido, true);
+  assert.deepEqual(resultado.errores, []);
   assert.deepEqual(catalogo, copia);
 });

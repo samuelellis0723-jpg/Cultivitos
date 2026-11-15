@@ -1,10 +1,10 @@
 # Contratos de dominio · FIELDVERSE
 
-> **Estado del documento:** revisión v0.2 de Etapa 0. Borrador para nueva revisión del equipo.
+> **Estado del documento:** propuesta de revisión v0.3 de Etapa 0. Borrador de trabajo sujeto a revisión y ratificación formal del equipo (Hellen, Alex y Samuel).
 > **Autoría:** Hellen (`backend/src/domain/`, `docs/metodologia/`).
-> **Revisión solicitada por:** Samuel. **Conformidad general:** Alex.
+> **Revisión solicitada por:** Samuel (v0.2). **Conformidad general de la v0.2:** Alex. **v0.3:** incorpora D17–D21 como propuestas de diseño; **tanto el documento v0.3 en su conjunto como las decisiones D17–D21 y el contrato propuesto `Ciclo` v0.2 están estrictamente pendientes de ratificación por parte de Hellen, Alex y Samuel**, y no deben considerarse acuerdos cerrados ni implementarse en código o exponerse en la API pública sin dicha ratificación.
 > **Alcance de esta etapa:** definición de contratos de datos. **No contiene código JavaScript.**
-> **Regla de marcado:** toda decisión que no esté establecida en `AGENTS.md`, `README.md`, `docs/contrato-api.md`, `docs/equipo.md` o en el registro de decisiones acordadas de §0.3 se marca como **PROPUESTA PENDIENTE DE APROBACIÓN**.
+> **Regla de marcado:** toda decisión que no esté establecida en `AGENTS.md`, `README.md`, `docs/contrato-api.md`, `docs/equipo.md` o en el registro de decisiones acordadas de §0.3 se marca como **PROPUESTA PENDIENTE DE APROBACIÓN / RATIFICACIÓN**.
 > **Límite explícito:** este documento no inventa fuentes científicas, valores climáticos, umbrales, rendimientos ni probabilidades de supervivencia. Los ejemplos numéricos que aparecen son los del `docs/contrato-api.md` y son **ficticios**.
 
 ---
@@ -17,6 +17,7 @@
 |---|---|---|
 | v0.1 | Etapa 0 | Definición inicial de contratos de dominio. |
 | v0.2 | 2026-11-14 | Se incorporan los seis ajustes solicitados por Samuel; Alex manifestó conformidad general. |
+| v0.3 | 2026-11-15 | Se documentan D17–D21 y el contrato propuesto `Ciclo` v0.2; se eliminan contradicciones internas (representación de `fuenteId` en ciclos pendientes sin inventar fuentes, reglas de coherencia entre `nivelEvidencia`/`alcanceGeografico`/`localidad`, semántica de `finca.mesInicio` en validación de entrada frente a compatibilidad por estrategia, reorganización de D20 y relación con `ResultadoSimulacion` en D10); se ratifica explícitamente que el documento v0.3 y D17–D21 están pendientes de ratificación del equipo; D1–D16, D22 y rotaciones A/B/C se conservan no validadas. |
 
 ### 0.2 Los seis ajustes de esta revisión
 
@@ -40,6 +41,8 @@
 | Matriz de prueba de minimax | Se mantiene la matriz ficticia del contrato |
 | Localidad piloto y cultivos definitivos | Siguen pendientes de confirmación |
 | Valores agronómicos, umbrales, rendimientos y fuentes | No se inventan; quedan pendientes de fuente citada |
+
+Las decisiones **D17–D21** se incorporan en §10.1–§10.5 como definidas a nivel de diseño; su ratificación se indica en la tabla de §10 y requiere acuerdo formal de Hellen, Alex y Samuel. **D1–D16 y D22** permanecen no validadas / pendientes. Las rotaciones A, B y C no están validadas (§2.4.1, §10.6).
 
 ### 0.4 Reglas invariantes
 
@@ -136,7 +139,11 @@ Fijar, antes de escribir código, los contratos de datos que sostienen el catál
 }
 ```
 
-Regla: **ningún valor agronómico del catálogo puede existir sin una `fuenteId` que lo respalde** una vez el catálogo deje de ser demostrativo.
+Regla de respaldo documental:
+
+- Ningún valor agronómico que se utilice para evidencia, elegibilidad o cálculo de puntuaciones puede existir sin una `fuenteId` válida que lo respalde en `fuentes[]` una vez el catálogo deje de ser demostrativo.
+- **Representación de ciclos pendientes sin fuente:** En el contrato propuesto, un ciclo con `nivelEvidencia = "pendiente"` que carezca de respaldo documental se representa legítima y coherentemente con `fuenteId: null` (y en su caso `ventanaSiembra: null` o `duracionDias: null`). **Está estrictamente prohibido inventar fuentes ficticias o asignar identificadores arbitrarios** para simular que existe una fuente.
+- Los ciclos con `fuenteId: null` pueden figurar en el catálogo como definiciones en investigación o borradores pendientes, pero **no se consideran evidencia validada, no son elegibles para puntuación y no pueden producir estrategias recomendadas ni ganadoras**. Toda entrada con `fuenteId: null` debe resolverse antes de cargar datos reales de producción.
 
 ### 2.3 `Cultivo`
 
@@ -149,19 +156,66 @@ Regla: **ningún valor agronómico del catálogo puede existir sin una `fuenteId
 }
 ```
 
-### 2.4 `Ciclo`
+### 2.4 `Ciclo` — contrato propuesto v0.2
 
 ```jsonc
 {
   "id": "string",
   "cultivoId": "string",
-  "ventanaSiembra": { "inicioMes": 1, "finMes": 12 },   // meses 1–12
-  "duracionMeses": "number|null",
-  "fuenteId": "string"
+  "ventanaSiembra": { "inicioMes": 1, "finMes": 12 }, // ejemplo de forma; no es una ventana validada
+  "duracionDias": { "min": 85, "max": 92 },           // ejemplo de forma; no es una duración validada para Liberia
+  "alcanceGeografico": "local|cantonal|regional|nacional|null", // null solo si parcial/pendiente y el alcance no se puede determinar
+  "localidad": "string|null",                         // null para nacional o alcance null; obligatorio para local/cantonal/regional
+  "nivelEvidencia": "directa_local|extrapolada|parcial|pendiente",
+  "fuenteId": "string|null"                           // null solo si pendiente y falta fuente documental
 }
 ```
 
+**Estado:** propuesta de contrato v0.2, definida a nivel de diseño (D17–D21, §10.1–§10.5). No está implementada ni ratificada por el equipo.
+
+Reglas de la v0.2:
+
+- `duracionDias` sustituye a `duracionMeses`. No se mantiene `duracionMeses` como alias ni como campo derivado persistido.
+- `duracionDias` es `null` o un objeto con `min` y `max` enteros positivos, `min <= max`. Un valor exacto usa `min = max`. No se aceptan cero, negativos ni fracciones.
+- No se convierte automáticamente de meses a días. Si la fuente solo expresa meses, se usa `null` y se conserva la expresión original en `Fuente.notas`.
+- `ventanaSiembra` es `null` o un objeto con `inicioMes`/`finMes` enteros en `[1, 12]`. En la v0.2 se exige `inicioMes <= finMes`; las ventanas que cruzan año no están soportadas.
+- `ventanaSiembra: null` solo se permite si `nivelEvidencia = "pendiente"`. Lo recíproco no siempre se cumple: un ciclo con ventana conocida sigue siendo `pendiente` si su duración es `null` o si carece de fuente comprobada.
+- `duracionDias: null` solo se permite si `nivelEvidencia = "pendiente"`.
+- `fuenteId` referencia al `id` de una `Fuente` en `fuentes[]` que respalda los valores conocidos de ventana y duración del ciclo:
+  - Para `nivelEvidencia = "directa_local"` o `"extrapolada"`, `fuenteId` es **obligatorio** (string no vacío, debe existir en `fuentes[]`).
+  - Para `nivelEvidencia = "parcial"`, `fuenteId` es **obligatorio** (string no vacío, debe existir en `fuentes[]`), respaldando la referencia parcial o preliminar.
+  - Para `nivelEvidencia = "pendiente"`, `fuenteId` es **`null`** cuando se carece de fuente documental comprobada. Si existe una fuente pero los valores son incompletos o no verificados, puede contener el string de dicha fuente en `fuentes[]`. Nunca se inventa una fuente ficticia.
+  - Si ventana y duración provienen de fuentes distintas, no se inventa una fuente compuesta; se requiere resolver D22 (§10.7) antes de cargar datos reales.
+
+#### Reglas de coherencia entre `nivelEvidencia`, `alcanceGeografico` y `localidad`
+
+| `nivelEvidencia` | `alcanceGeografico` permitido | `localidad` permitida | Requisitos sobre valores (`ventanaSiembra`, `duracionDias`) | `fuenteId` |
+|---|---|---|---|---|
+| `directa_local` | Exclusivamente `"local"` | Exclusivamente `"Liberia"` (o la localidad piloto formal de D1). No nulo. | Ambos obligatorios, completos y verificados directamente en la localidad. | Obligatorio (`string` en `fuentes[]`). |
+| `extrapolada` | `"cantonal"`, `"regional"` o `"nacional"`. Prohibido `"local"` y prohibido `null`. | Si es `"cantonal"` o `"regional"`: obligatorio (`string` con nombre). Si es `"nacional"`: estrictamente `null`. | Ambos obligatorios, completos y verificados en la localidad/alcance citado. | Obligatorio (`string` en `fuentes[]`). |
+| `parcial` | `"local"`, `"cantonal"`, `"regional"`, `"nacional"`, o `null` si no se puede determinar. | Si el alcance es `"local"`, `"cantonal"` o `"regional"`: obligatorio (`string`). Si es `"nacional"` o `null`: estrictamente `null`. | Al menos un valor proviene de fuente parcial, índice o mención contextual. Valores no nulos (si alguno es `null`, pasa a `pendiente`). | Obligatorio (`string` en `fuentes[]`). |
+| `pendiente` | `"local"`, `"cantonal"`, `"regional"`, `"nacional"`, o `null` si no se puede determinar. | Si el alcance es `"local"`, `"cantonal"` o `"regional"`: obligatorio (`string`). Si es `"nacional"` o `null`: estrictamente `null`. | Al menos un valor es `null` o carece de fuente documental comprobada. | `string|null` (`null` si falta fuente). |
+
+Invariantes de consistencia:
+
+1. **Regla de localidad nula:** `localidad` es estrictamente `null` si y solo si `alcanceGeografico` es `"nacional"` o `null`. Para cualquier otro alcance (`local`, `cantonal`, `regional`), `localidad` es obligatoria y no vacía.
+2. **Incompatibilidad de directa_local:** `directa_local` prohíbe cualquier alcance distinto a `"local"`, y cualquier localidad distinta a la localidad piloto oficial (Liberia en la propuesta actual).
+3. **Incompatibilidad de extrapolada:** `extrapolada` prohíbe alcance `"local"` (ya que sería evidencia local) y prohíbe alcance `null` (la extrapolación exige origen geográfico explícito).
+4. **Regla del eslabón más débil:** El `nivelEvidencia` del ciclo es el mínimo nivel entre la evidencia de `ventanaSiembra` y de `duracionDias`: `directa_local > extrapolada > parcial > pendiente` (D19, §10.3).
+5. **Principio de no fragmentación:** Un `Ciclo` declara un único `alcanceGeografico` y una única `localidad`. Ventana y duración deben compartir alcance y localidad; si difieren, aplica D22 (§10.7) antes de cargar datos reales.
+6. **Elegibilidad para simulación:** Un ciclo `parcial` o `pendiente` puede mostrarse en catálogo con su etiqueta, pero no es elegible para puntuación ni puede producir estrategias ganadoras. Un ciclo con evidencia `extrapolada` puede puntuarse, pero la salida y la interfaz deben exhibir la advertencia de extrapolación geográfica; la representación de esta etiqueta en la salida queda pendiente en D10.
+
 **Decisión acordada:** la primera versión **no contiene etapas fenológicas**. No se incluye el campo `etapas` en `Ciclo`. Si en el futuro se necesitan, se incorporarán como una nueva versión del contrato, no como un campo opcional silencioso.
+
+#### 2.4.1 Estado de las rotaciones A, B y C
+
+Las rotaciones candidatas son:
+
+- **A:** maíz → frijol.
+- **B:** maíz → sorgo.
+- **C:** sorgo → frijol.
+
+**No están validadas agronómica ni temporalmente.** Siguen siendo candidatas de diseño. A y B no pueden declararse compatibles con la evidencia actual; C es plausible pero no verificada. La matriz ficticia de §7.5 no las valida. No deben presentarse como recomendación, ni usarse para puntuación, hasta cumplir D18 y D20 y ratificar D17–D21.
 
 ### 2.5 `Estrategia`
 
@@ -235,13 +289,21 @@ Regla: `valor` es el único token que viaja como dato agronómico; `etiqueta` es
 ### 2.8 Reglas de integridad del catálogo
 
 - `version` es obligatoria y no vacía.
-- Toda `fuenteId` referenciada debe existir en `fuentes[]`.
+- Toda `fuenteId` no nula referenciada debe existir en `fuentes[]`.
+- `fuenteId` en `Ciclo` es obligatoria para `directa_local`, `extrapolada` y `parcial`; es `null` únicamente cuando `nivelEvidencia = "pendiente"` y no se dispone de fuente documental comprobada. En ningún caso se crea una `Fuente` ficticia.
 - Todo `cultivoId`/`cicloId` de una estrategia debe existir; el ciclo debe pertenecer al cultivo del paso.
 - `pasos` tiene exactamente dos elementos con `orden` 1 y 2.
 - Los `id` de `parametrosPuntuacion` son únicos dentro de la estrategia.
-- Todo `ParametroPuntuacion` tiene `valor` numérico finito, `unidad` no vacía y `fuenteId` existente.
+- Todo `ParametroPuntuacion` tiene `valor` numérico finito, `unidad` no vacía y `fuenteId` existente en `fuentes[]`.
 - Los `valor` de cada lista de `opcionesFinca` son únicos y no vacíos.
 - `inicioMes`/`finMes` y `mesInicio` ∈ [1, 12].
+- `duracionDias` es `null` o `{min, max}` con enteros positivos y `min <= max`; no se acepta `duracionMeses`.
+- `ventanaSiembra` es `null` solo si `nivelEvidencia = "pendiente"`; si existe, `inicioMes <= finMes` en la v0.2.
+- `alcanceGeografico` y `nivelEvidencia` cumplen estrictamente la matriz de coherencia de §2.4. `alcanceGeografico` es `null` solo si `nivelEvidencia` es `parcial` o `pendiente` y el alcance no se puede determinar.
+- `localidad` es estrictamente `null` si y solo si `alcanceGeografico` es `"nacional"` o `null`; es obligatoria para `local`, `cantonal` y `regional`.
+- `directa_local` exige `alcanceGeografico = "local"` y `localidad = "Liberia"`; `extrapolada` exige alcance `"cantonal"`, `"regional"` o `"nacional"` (nunca `"local"` ni `null`).
+- Un ciclo no mezcla alcances ni localidades entre ventana y duración; si provienen de fuentes o alcances distintos, D22 debe resolverse antes de cargar datos reales.
+- Un ciclo `parcial` o `pendiente` no es elegible para cálculo de puntuación ni puede producir recomendaciones ganadoras.
 - El catálogo es **inmutable en tiempo de ejecución**: el motor lo recibe, no lo modifica.
 
 ---
@@ -351,15 +413,33 @@ motorSimular({ finca, clima, catalogo }) -> ResultadoSimulacion
   "drenaje": "desconocido",  // §3.3
   "riego": "desconocido",    // §3.4
   "cultivosAnteriores": [],  // PROPUESTA PENDIENTE: ids de cultivo (D4)
-  "mesInicio": 5,            // [1, 12]
+  "mesInicio": 5,            // [1, 12]; mes previsto para el primer ciclo de cultivo
   "prioridad": "equilibrio"  // §3.5
 }
 ```
 
-Validación (entrada inválida ⇒ error de dominio, no resultado):
+#### Semántica de `finca.mesInicio`: validación de entrada frente a compatibilidad por estrategia
 
-- Tipos numéricos y rangos de coordenadas y mes.
-- Valores dentro del vocabulario controlado del catálogo.
+Para evitar confusiones en la integración entre capas, se distinguen rigurosamente dos niveles de procesamiento:
+
+1. **Validación del dato de entrada (Frontera del motor / Esquema):**
+   - El motor valida únicamente que `mesInicio` sea un número entero en el rango `[1, 12]`.
+   - Si el valor falta, no es entero o está fuera de `1–12`, la entrada es **inválida** y se rechaza antes de simular (error de validación de entrada). Esto **no produce un `ResultadoSimulacion`**.
+   - **En la entrada NO se comprueba si el mes cae dentro de la ventana de siembra de algún cultivo o ciclo**, porque las ventanas pertenecen a los ciclos específicos del catálogo y varían por estrategia. La finca no tiene un único ciclo asignado a priori.
+
+2. **Compatibilidad agronómica y temporal por estrategia (Motor de simulación):**
+   - Una vez admitida la entrada, el motor evalúa cada estrategia individualmente contra el `mesInicio` provisto.
+   - Para cada estrategia candidata, se consulta la ventana de siembra del ciclo de su primer paso (`pasos[0]`):
+     - Si la ventana es conocida (`ventanaSiembra != null`) y `mesInicio` se encuentra dentro del rango `[inicioMes, finMes]`, la estrategia es temporalmente admisible para iniciar en ese mes.
+     - Si la ventana es conocida y `mesInicio` se encuentra **fuera** de `[inicioMes, finMes]`, la estrategia es incompatible temporalmente con la fecha deseada de la finca. La estrategia se marca como `elegible: false` y se registra el motivo de descarte en `motivosDescarte`.
+     - Si la ventana del primer ciclo es desconocida (`ventanaSiembra: null`), la compatibilidad temporal de la estrategia resulta `no_evaluable`.
+   - **Sin códigos de error inventados:** El nombre de trabajo preliminar `MES_INICIO_FUERA_DE_VENTANA` mencionado en borradores previos es **únicamente un identificador ilustrativo de trabajo, no un código aprobado ni definitivo**. No se inventan códigos definitivos de error de API ni identificadores normativos de descarte; los códigos y textos finales quedan sujetos al acuerdo de las decisiones D5 y D10 entre Hellen, Alex y Samuel.
+
+Validación general de entrada (entrada inválida ⇒ rechazo antes de simular; no produce `ResultadoSimulacion`):
+
+- Tipos numéricos y rangos de coordenadas (`latitude` en `[-90, 90]`, `longitude` en `[-180, 180]`).
+- `mesInicio` entero en `[1, 12]`.
+- Valores de `suelo`, `drenaje`, `riego` y `prioridad` dentro del vocabulario controlado del catálogo.
 - `cultivosAnteriores` conforme al formato que se apruebe (D4).
 
 > El ejemplo de coordenadas `9.93 / -84.09` proviene del contrato y es **ilustrativo, no una finca validada**.
@@ -379,6 +459,8 @@ Ver §2. El motor no construye el catálogo: lo recibe.
 3. **Sin estrategias elegibles**, con datos esenciales disponibles ⇒ `estado: "sin_opciones"`.
 4. **Datos suficientes, al menos una estrategia elegible y todas las elegibles con puntuaciones calculables en todos los escenarios** ⇒ `estado: "completo"`.
 5. **`demo`** es un modo explícito para verificar el algoritmo con la matriz ficticia; no se deriva de datos reales.
+
+> La forma en que `indeterminada`, `no_evaluable`, `parcial` y `pendiente` se asignan a estos estados queda pendiente en D10; no se crean estados nuevos en v0.3.
 
 ---
 
@@ -474,7 +556,9 @@ Si falta una variable, su unidad, sus fechas, su procedencia o su cobertura, el 
 
 **PROPUESTA PENDIENTE DE CONFIRMACIÓN TÉCNICA DE ALEX.**
 
-- Las **ventanas de cultivo** las calcula el motor de dominio a partir de `Ciclo.ventanaSiembra`, `Ciclo.duracionMeses`, `finca.mesInicio` y el catálogo.
+- Las **ventanas de cultivo** las calcula el motor de dominio a partir de `Ciclo.ventanaSiembra`, `Ciclo.duracionDias`, `finca.mesInicio`, `Ciclo.nivelEvidencia` y el catálogo, aplicando D17–D21 (§10.1–§10.5).
+- Si `ventanaSiembra` o `duracionDias` es `null`, la estrategia no es evaluable; no se sustituye por cero ni por un valor supuesto.
+- Si `nivelEvidencia` es `parcial` o `pendiente`, el ciclo no se puntúa aunque sus valores estén presentes; la falta de fuente o la evidencia incompleta no se compensa con un valor supuesto (D19).
 - Los **escenarios hipotéticos** (`habitual`, `seco`, `humedo`) los define y aplica el motor de dominio (D6).
 - Alex entrega **series diarias normalizadas y metadatos**; no necesita precalcular ventanas por cultivo ni escenarios.
 - Esto difiere de la frase ilustrativa de `contrato-api.md:60` («Alex agregue datos por ventanas de cultivo»). La diferencia se registra en §9 y requiere acuerdo.
@@ -552,6 +636,31 @@ Ninguno de estos detalles fija valores agronómicos; son acuerdos de integració
 - `motivosNoCalculable` puede omitir las claves cuyo valor sea calculable; si se incluyen, usan `null`.
 - `motivoPeorArrepentimiento` explica por qué `peorArrepentimiento` es `null`.
 
+#### Relación entre compatibilidad temporal, niveles de evidencia y `ResultadoSimulacion`
+
+El contrato propuesto articula las evaluaciones de ciclo y estrategia con el resultado de simulación respetando la precedencia de estados y sin añadir campos públicos definitivos no acordados:
+
+1. **Estrategia con compatibilidad temporal `compatible`:**
+   - Si ambos ciclos cuentan con evidencia `directa_local` o `extrapolada` y los parámetros requeridos están disponibles, la estrategia es `elegible: true` y sus puntajes se calculan numéricamente en todos los escenarios.
+   - Si la evidencia de alguno de los ciclos es `extrapolada`, la estrategia es calculable y elegible, pero debe acompañarse de advertencia de alcance geográfico; la vía de reporte se define en D10.
+
+2. **Estrategia con compatibilidad temporal `incompatible`:**
+   - La secuencia temporal no es viable (el ciclo 1 se solapa con el ciclo 2, o `finca.mesInicio` está fuera de la ventana del primer ciclo).
+   - Se representa en `ResultadoSimulacion` con `elegible: false` y un motivo descriptivo en `resultados[].motivosDescarte` (así como en el resumen derivado `descartes[]`).
+   - No invalida la simulación de otras estrategias; si ninguna resulta elegible y no faltan datos esenciales, el estado global es `sin_opciones`.
+
+3. **Estrategia con compatibilidad temporal `indeterminada`:**
+   - La secuencia temporal no puede confirmarse ni descartarse debido a la amplitud del rango `{min, max}` o a la granularidad mensual (D18).
+   - Una estrategia indeterminada **no puede producir ganadoras ni recomendarse**.
+   - No se inventan puntuaciones ni probabilidades. La opción de registrarla como descarte en `motivosDescarte` frente a valor no calculable en `motivosNoCalculable` queda como mapeo pendiente en D10.
+
+4. **Estrategia con compatibilidad temporal `no_evaluable` o ciclos con evidencia `parcial` / `pendiente`:**
+   - Si a un ciclo le falta `ventanaSiembra` o `duracionDias` (`no_evaluable`), o si carece de fuente comprobada (`nivelEvidencia = "pendiente"` o `"parcial"`), la estrategia **no puede ser puntuada ni declarada ganadora**.
+   - En `ResultadoSimulacion`, los puntajes afectados se reportan como `null` con su motivo en `motivosNoCalculable`.
+   - Si faltan datos esenciales para evaluar las estrategias de la simulación, el estado global es `incompleto` y las ausencias se declaran en `evidencia.datosFaltantes`.
+
+> **Límite de contrato público (Pendiente D10):** No se añaden campos definitivos al contrato público de `ResultadoSimulacion` en esta revisión v0.3. Las opciones de representación formal (reutilizar `elegible`/`motivosDescarte`/`motivosNoCalculable`, incorporar metadatos opcionales o resolver advertencias en la interfaz mediante consulta al catálogo) se registran en D10 (§10.8) y requieren acuerdo formal de Hellen, Alex y Samuel.
+
 ### 6.2 Puntuaciones y valores no calculables
 
 - La puntuación es un número en `[0, 100]`; **mayor es mejor** (decisión acordada, §0.3).
@@ -576,11 +685,13 @@ Regla de distinción:
 - **`sin_opciones`**: los datos esenciales están disponibles, pero **ninguna estrategia satisface las restricciones conocidas**. No se fuerza ganador.
 - Si faltan datos esenciales **y además** no hay estrategias elegibles, prevalece `incompleto`; no se declara `sin_opciones` sobre una evaluación incompleta.
 - **No forzar ganador** si no hay opciones elegibles o faltan datos esenciales (`contrato-api.md:70`).
+- La forma en que `indeterminada`, `no_evaluable`, `parcial` y `pendiente` se reflejan en `estado`, `motivosDescarte` o `motivosNoCalculable` queda pendiente en D10; no se fija en v0.3.
 
 ### 6.4 Motivos de descarte
 
 - Toda estrategia con `elegible: false` debe incluir al menos un motivo en `motivosDescarte`.
 - El motivo explica qué restricción conocida no se cumplió. Los códigos y textos definitivos dependen de las reglas de elegibilidad (D5).
+- `MES_INICIO_FUERA_DE_VENTANA` (D21) es un nombre de trabajo; su código y texto definitivos dependen de D5.
 - Las estrategias descartadas permanecen en `resultados[]` con `elegible: false` y se excluyen del cálculo minimax regret.
 - Un descarte no es lo mismo que un valor no calculable: el descarte indica que la estrategia no cumple una restricción; el valor no calculable indica que falta información para puntuar.
 
@@ -722,10 +833,11 @@ La dirección de la puntuación ya está acordada: `0–100`, mayor es mejor. No
 | A8 | Estados `completo/incompleto/sin_opciones/demo` (`:64`). | Se mantienen y se refinan sus definiciones (§6.3). | Compatible. | Ninguna. |
 | A9 | `prioridad` con `equilibrio/agua/suelo` (`:38`). | Se mantiene y se añaden etiquetas visibles (§3.5). | Compatible; adición de UI. | Validar etiquetas con Samuel. |
 | A10 | No hay endpoints ni código en este documento. | Sin cambios de código, rutas, controladores ni servicios. | Sin efecto técnico. | Ninguna. |
+| A11 | `contrato-api.md` no detalla el esquema de `Ciclo`. | Se propone `Ciclo` v0.2 con `duracionDias`, `alcanceGeografico`, `localidad` y `nivelEvidencia` (§2.4). | Adición al contrato interno del catálogo. | Acordar con Alex y Samuel antes de exponerlo. |
 
 ---
 
-## 10. Decisiones pendientes y responsables
+## 10. Decisiones: estado y responsables
 
 | # | Decisión | Responsable | Estado |
 |---|---|---|---|
@@ -738,15 +850,223 @@ La dirección de la puntuación ya está acordada: `0–100`, mayor es mejor. No
 | D7 | Pesos, indicadores, parámetros de puntuación y normalización a `0–100` | Hellen | PENDIENTE |
 | D8 | Escala `0–100` y dirección «mayor es mejor» | Equipo | **ACORDADO** (§0.3) |
 | D9 | Estructura de `clima` con series diarias por variable | Hellen (confirmación de Alex) | PROPUESTA; pendiente de Alex |
-| D10 | Formato de `motivosNoCalculable`, `motivosDescarte` y `descartes` | Hellen + Alex | PROPUESTO; pendiente de Alex |
+| D10 | Formato de `motivosNoCalculable`, `motivosDescarte`, `descartes` y representación de estados/evidencia en `ResultadoSimulacion` | Hellen + Alex | PROPUESTO; pendiente de Alex; campos públicos requieren acuerdo con Samuel |
 | D11 | Dependencias de backend (si se requieren) | Alex | A definir |
 | D12 | Uso de etapas fenológicas en la primera versión | Equipo | **ACORDADO: no se usan** (§0.3) |
 | D13 | Si los dos cultivos de una estrategia deben ser distintos | Hellen + equipo | PENDIENTE |
 | D14 | Exponer `opcionesFinca` en `GET /api/catalog` | Alex + Samuel | PENDIENTE (adición al contrato) |
 | D15 | Validación de etiquetas visibles del formulario | Samuel + Hellen | PENDIENTE |
 | D16 | Confirmación técnica de los detalles C1–C11 de §5.6 | Alex | PENDIENTE |
+| D17 | Representación canónica de duración: `duracionDias` con rango `{min, max}` o `null` | Hellen + Alex | DEFINIDA A NIVEL DE DISEÑO; PROPUESTA PENDIENTE DE RATIFICACIÓN |
+| D18 | Compatibilidad temporal entre ciclos: estados `compatible`/`incompatible`/`indeterminada`/`no_evaluable` | Hellen + Alex | DEFINIDA A NIVEL DE DISEÑO; PROPUESTA PENDIENTE DE RATIFICACIÓN |
+| D19 | Alcance geográfico y etiquetado de evidencia (`alcanceGeografico`, `localidad`, `nivelEvidencia`) | Hellen + Alex + Samuel | DEFINIDA A NIVEL DE DISEÑO; PROPUESTA PENDIENTE DE RATIFICACIÓN |
+| D20 | Criterios para confirmar ventanas de siembra; ninguna ventana del piloto está confirmada aún | Hellen + equipo | DEFINIDA A NIVEL DE DISEÑO; PROPUESTA PENDIENTE DE RATIFICACIÓN |
+| D21 | Rol de `finca.mesInicio`: mes del primer ciclo, dentro de su ventana; no desplaza los demás ciclos | Hellen + Alex | DEFINIDA A NIVEL DE DISEÑO; PROPUESTA PENDIENTE DE RATIFICACIÓN |
+| D22 | Trazabilidad cuando la ventana y la duración provienen de fuentes o alcances distintos | Hellen + Alex + Samuel | PENDIENTE |
 
 > Ninguna de estas decisiones debe cerrarse sin fuente citada (D1–D3, D6–D7) ni sin acuerdo del equipo (D4, D8–D10, D13–D15).
+
+> **D17–D21** están definidas a nivel de diseño en §10.1–§10.5. No están implementadas ni ratificadas por el equipo; la ratificación final corresponde a Hellen, Alex y Samuel, mientras que la columna Responsable indica quién lidera la propuesta. **D10** (§10.8) documenta el mapeo de compatibilidad temporal y evidencia en la salida sin alterar el contrato público, y permanece como propuesta pendiente de acuerdo con Alex y Samuel. **D22** sigue pendiente. Las rotaciones A, B y C no están validadas (§2.4.1, §10.6).
+
+### 10.1 D17 — Representación de duración
+
+**Decisión:** `Ciclo.duracionDias` es la única fuente de verdad; `duracionMeses` se elimina en la v0.2.
+
+**Reglas:**
+
+- `duracionDias` es `{ min, max }` o `null`.
+- `min` y `max` son enteros positivos; `min <= max`. Un valor exacto usa `min = max`.
+- `null` significa desconocido; nunca `0`.
+- No se aceptan fracciones, negativos ni conversión automática de meses a días.
+- Si la fuente solo expresa meses, se usa `null` y se conserva la expresión original en `Fuente.notas`.
+- El rango se copia tal como la fuente; no se usa el punto medio.
+- La UI puede derivar meses solo para visualización, marcados como aproximados; el motor no los usa.
+
+**Limitaciones:**
+
+- Un rango amplio puede producir compatibilidad `indeterminada` (D18).
+- `null` impide evaluar y puntuar el ciclo.
+- No se inventa un máximo agronómico; el validador solo exige entero positivo y orden.
+- Requiere ratificación final del equipo (Hellen, Alex y Samuel) antes de cambiar el contrato o el validador; la revisión técnica la lideran Hellen + Alex.
+
+### 10.2 D18 — Compatibilidad temporal entre ciclos
+
+**Decisión:** evaluar la secuencia en días y devolver `compatible`, `incompatible`, `indeterminada` o `no_evaluable`.
+
+**Reglas:**
+
+- `finca.mesInicio` fija el mes del primer ciclo (D21).
+- El primer ciclo empieza entre el primer y el último día de ese mes.
+- El segundo ciclo empieza entre el primer día de `inicioMes` y el último día de `finMes` de su ventana.
+- `bufferDias = 0` en la v0.2; no se inventa un colchón agronómico.
+- Fechas inclusivas: `fin = inicio + duracionDias - 1`.
+- El segundo ciclo empieza, como mínimo, en `fin + 1 + bufferDias`.
+- No se soportan ventanas que crucen año en la v0.2.
+
+**Fórmulas:**
+
+```text
+finMin = primerDia(mesInicio) + duracionDias.min - 1
+finMax = ultimoDia(mesInicio) + duracionDias.max - 1
+inicio2Min = primerDia(ventana2.inicioMes)
+inicio2Max = ultimoDia(ventana2.finMes)
+
+compatible    si finMax + bufferDias < inicio2Min
+incompatible  si finMin + bufferDias >= inicio2Max
+indeterminada en otro caso
+no_evaluable  si falta duracionDias o ventanaSiembra
+```
+
+**Limitaciones:**
+
+- `indeterminada` no es un fallo: expresa que la granularidad mensual no permite afirmar más.
+- `indeterminada` y `no_evaluable` no se puntúan ni pueden producir ganadoras. La falta de fuente no cambia el cálculo temporal; si `nivelEvidencia` es `parcial` o `pendiente`, D19 impide puntuar.
+- La representación de estos estados en `ResultadoSimulacion` queda pendiente en D10; no se añade un campo público definitivo en v0.3.
+- No evalúa clima; solo secuencia y duración. El clima se evalúa en D6/D7.
+- Requiere ratificación final del equipo (Hellen, Alex y Samuel); la revisión técnica la lideran Hellen + Alex.
+
+### 10.3 D19 — Alcance geográfico y etiquetado de evidencia
+
+**Decisión:** cada `Ciclo` declara `alcanceGeografico`, `localidad` y `nivelEvidencia`.
+
+**Valores:**
+
+- `alcanceGeografico`: `local` (Liberia), `cantonal` (otro cantón de Chorotega), `regional` (Chorotega), `nacional` (Costa Rica), o `null` si `nivelEvidencia` es `parcial`/`pendiente` y el alcance no se puede determinar.
+- `localidad`: obligatoria para `local`, `cantonal` y `regional`; `null` para `nacional` o cuando `alcanceGeografico` es `null`.
+- `nivelEvidencia`: `directa_local`, `extrapolada`, `parcial`, `pendiente`.
+
+**Reglas de coherencia:**
+
+- `directa_local`: ventana y duración verificadas con fuente consultada directamente, `alcanceGeografico = "local"` y `localidad = "Liberia"` (D1 pendiente). No admite ningún otro alcance ni localidad, ni valores nulos. `fuenteId` obligatorio.
+- `extrapolada`: ambas verificadas, pero con `alcanceGeografico` en `cantonal`, `regional` o `nacional` (prohibido `"local"` y prohibido `null`); `localidad` obligatoria para cantonal y regional, y estrictamente `null` para nacional. `fuenteId` obligatorio.
+- `parcial`: al menos un valor proviene de índice/snippet, la fuente solo cubre parte del valor o no lo aborda específicamente. Valores no nulos (si alguno es `null`, pasa a `pendiente`). `alcanceGeografico` puede ser local, cantonal, regional, nacional, o `null` si no se puede determinar. `localidad` obligatoria para local/cantonal/regional, y `null` para nacional o si el alcance es `null`. `fuenteId` obligatorio referenciando la fuente parcial.
+- `pendiente`: al menos un valor (`ventanaSiembra` o `duracionDias`) es `null` o carece de fuente comprobada. `alcanceGeografico` puede ser local, cantonal, regional, nacional, o `null` si no se puede determinar. `localidad` sigue la regla general (obligatoria para local/cantonal/regional; `null` para nacional o alcance `null`). `fuenteId` es `null` si falta fuente; no se inventan fuentes.
+- **Invariante de localidad:** `localidad` es estrictamente `null` si y solo si `alcanceGeografico` es `"nacional"` o `null`.
+- **Regla del eslabón más débil:** `nivelEvidencia` del ciclo es el mínimo nivel entre ventana y duración: `directa_local > extrapolada > parcial > pendiente`.
+- **Principio de no fragmentación:** Un ciclo declara un solo `alcanceGeografico` y una sola `localidad`; ventana y duración deben compartir alcance/localidad. Si no, D22 debe resolverse antes de cargar datos reales.
+- `parcial` y `pendiente` no se puntúan; se muestran con etiqueta en el catálogo.
+- `extrapolada` puede puntuarse, pero la salida y la UI deben indicar “Evidencia extrapolada desde [localidad/alcance]; no validada para Liberia”. La forma de esa etiqueta queda pendiente en D10.
+
+**Limitaciones:**
+
+- Hoy no hay ciclos `directa_local` ni `extrapolada` con ventana y duración verificadas para el piloto; ver D20.
+- Un solo `fuenteId` no representa ventana y duración de fuentes distintas; ver D22. `fuenteId: null` no autoriza inventar una fuente.
+- Requiere ratificación final del equipo (Hellen, Alex y Samuel).
+
+### 10.4 D20 — Criterios para confirmar ventanas de siembra
+
+**Decisión:** una ventana de siembra (`ventanaSiembra`) solo se considera confirmada si cumple de manera concurrente todos los criterios del Bloque A. La información que no satisfaga estos criterios se gestiona conforme a las reglas del Bloque B.
+
+**A. Criterios de confirmación de ventanas de siembra (todos obligatorios):**
+
+1. **Consulta directa y completa:** La fuente debe haber sido consultada y leída directamente en su texto íntegro; una URL con código 200, un snippet, un índice o un resumen bibliográfico no basta para confirmar la ventana.
+2. **Especificidad agronómica:** La fuente debe abordar explícita y específicamente el calendario o época de siembra del cultivo evaluado; una mención contextual o secundaria sobre el régimen general de lluvias no califica como confirmación de ventana.
+3. **Alcance geográfico explícito:** La fuente debe indicar claramente el ámbito territorial de aplicación (localidad específica, cantón, región o nivel nacional).
+4. **Diferenciación estacional y de propósito:** La fuente debe distinguir con precisión las épocas o tipos de ciclo (p. ej. primera frente a segunda/postrera en maíz; postrera frente a primera en frijol; grano frente a forraje/silaje en sorgo).
+5. **Registro bibliográfico completo en catálogo:** Deben documentarse en `Fuente.notas` el título, autor o institución, fecha, URL o ISBN, y la página, sección o cita textual exacta de la que se extrae la recomendación.
+6. **Delimitación temporal explícita en meses calendario:** La ventana debe expresarse en meses inclusivos delimitados por la fuente; no se permite inferir o convertir expresiones climáticas genéricas (como «al inicio de las lluvias») en meses fijos sin que el texto original lo sustente.
+
+**B. Reglas aplicables a información parcial o pendiente:**
+
+1. **Ventanas con respaldo insuficiente o contextual (evidencia parcial):** Si se dispone de datos de siembra pero provienen únicamente de snippets, índices, resúmenes o menciones contextuales indirectas, la ventana no se considera confirmada. El ciclo se clasifica como `nivelEvidencia: "parcial"` (si los valores numéricos están presentes) o `"pendiente"`, y no es elegible para puntuación de estrategias ganadoras.
+2. **Ausencia total de fuente o de ventana:** Si no se dispone de fuente documental o se desconoce la ventana de siembra, se asigna `ventanaSiembra: null`, `fuenteId: null` (salvo que exista una fuente que respalde únicamente la duración) y `nivelEvidencia: "pendiente"`, con `alcanceGeografico: null` si tampoco se conoce el alcance. Queda estrictamente prohibido inventar ventanas de siembra o fuentes ficticias.
+3. **Independencia de confirmación entre ventana y duración:** La confirmación de una ventana aplica exclusivamente a `ventanaSiembra`. No transfiere confirmación automática a `duracionDias`. Si la ventana cumple todos los criterios del Bloque A pero `duracionDias` es desconocida o carece de fuente comprobada, el ciclo en su totalidad queda en `nivelEvidencia: "pendiente"` por la regla del eslabón más débil (D19) y no es elegible para puntuación.
+4. **Tratamiento de duración en días frente a meses:** Si la fuente consultada solo expresa la duración en meses, no se realiza conversión matemática automática a días ni se promedia; se asigna `duracionDias: null`, se registra la cita literal en `Fuente.notas` (D17) y el ciclo permanece como `pendiente`.
+5. **Trazabilidad y discrepancia de fuentes o alcance:** Si la ventana y la duración provienen de fuentes documentales distintas o de alcances geográficos diferentes, no se pueden unificar bajo un único registro sin resolver previamente D22 (§10.7).
+
+**Estado del piloto (Liberia/Chorotega):**
+
+| Cultivo | Estado | Motivo |
+|---|---|---|
+| **Maíz** | Sin ventana confirmada | SciELO 2021 menciona junio–octubre en Guanacaste, pero es contexto, no estudio de ventana. MAG/INTA no se pudieron leer directamente. |
+| **Frijol** | Sin ventana confirmada | `15 sep–15 oct` sigue siendo hipótesis. IICA 2007 no se pudo leer directamente. PITTA aporta duración/variedad, no ventana. Matambú es contexto de frijol nativo, no una ventana comercial. |
+| **Sorgo** | Sin ventana de grano confirmada | IICA/IDA 1983 no se pudo leer directamente. UCR 2026 es sorgo BMR forrajero en Cañas, no grano en Liberia. |
+
+**Limitaciones:**
+
+- No hay ventana confirmada para maíz, frijol ni sorgo en Liberia/Chorotega con estos criterios.
+- `15 sep–15 oct` para frijol sigue siendo hipótesis.
+- IICA/IDA 1983 e IICA 2007 no se pudieron leer directamente; UCR 2026 es forraje en Cañas; SciELO 2021 es contexto.
+- Requiere ratificación final del equipo (Hellen, Alex y Samuel); la revisión agronómica la lidera Hellen + equipo.
+
+### 10.5 D21 — Rol de `finca.mesInicio`
+
+**Decisión:** `mesInicio` es el mes previsto para el primer ciclo de la finca; no es un desplazamiento global de los ciclos ni un reemplazo de `Ciclo.ventanaSiembra`.
+
+**Reglas:**
+
+- **Validación del dato de entrada:** Obligatorio, número entero en `1–12`. Si no cumple este formato, se rechaza la simulación antes de ejecutarse (error de validación de entrada) sin generar `ResultadoSimulacion`. La validación de entrada no comprueba la ventana de siembra.
+- **Evaluación de compatibilidad por estrategia:** Debe caer dentro de la ventana de siembra del ciclo del primer paso (`pasos[0]`). Esta es una regla de compatibilidad temporal por estrategia, no un error de esquema.
+- Si `mesInicio` no cae dentro de dicha ventana ⇒ la estrategia se marca como `incompatible` (`elegible: false`) con un motivo descriptivo en `motivosDescarte`.
+- Si la ventana de siembra del primer ciclo es `null` ⇒ la compatibilidad temporal de la estrategia es `no_evaluable`.
+- No fija el mes del segundo ciclo (el segundo ciclo depende de la secuencia y duración del primero, conforme a D18).
+- No desplaza la ventana; solo selecciona un mes dentro de ella.
+- El día exacto dentro del mes es desconocido; lo gestiona el cálculo de intervalos de D18.
+- Si el primer ciclo tiene `nivelEvidencia` en `parcial` o `pendiente`, la estrategia no se puntúa.
+- No se soportan ventanas que crucen año en la v0.2.
+
+**Limitaciones:**
+
+- No convierte `mesInicio` en una fecha exacta.
+- No garantiza que la siembra ocurra en el mes indicado.
+- **Sin códigos inventados:** `MES_INICIO_FUERA_DE_VENTANA` es exclusivamente un nombre de trabajo ilustrativo. Los códigos normativos y textos definitivos de descarte o error quedan pendientes de definición en D5 y D10, y requieren acuerdo con Alex y Samuel.
+- Requiere ratificación final del equipo (Hellen, Alex y Samuel); la revisión técnica la lideran Hellen + Alex.
+
+### 10.6 Rotaciones A, B y C: no validadas
+
+- **A:** maíz → frijol.
+- **B:** maíz → sorgo.
+- **C:** sorgo → frijol.
+
+**Estado:** candidatas de diseño, no recomendaciones. No están validadas agronómica ni temporalmente. A y B no pueden declararse compatibles con la evidencia actual; C es plausible pero no verificada. La matriz ficticia de §7.5 no las valida. No se puntúan ni se presentan como recomendación hasta cumplir D18/D20 y ratificar D17–D21.
+
+### 10.7 D22 — Trazabilidad de múltiples fuentes (pendiente)
+
+**Problema:** `Ciclo.fuenteId` es singular, pero `ventanaSiembra` y `duracionDias` pueden provenir de fuentes distintas. El mismo problema de representación aparece si no comparten `alcanceGeografico`/`localidad`: un solo alcance no representa ambos componentes.
+
+**Opciones a evaluar:**
+
+- Exigir una fuente primaria que respalde ambos valores.
+- Añadir `fuenteIdVentana` y `fuenteIdDuracion`.
+- Permitir una `Fuente` compuesta que cite varias fuentes.
+- Separar el ciclo o registrar la ventana y la duración en objetos con fuente, alcance y localidad propios.
+
+**Estado:** PENDIENTE. D17–D21 asumen una fuente y un alcance primarios por ciclo. Si no se cumple, D22 debe resolverse antes de cargar datos reales. Responsables: Hellen + Alex + Samuel.
+
+### 10.8 D10 — Representación de compatibilidad temporal, niveles de evidencia y motivos en `ResultadoSimulacion` (pendiente de ratificación)
+
+**Problema:** El contrato público de `POST /api/simulations` (`docs/contrato-api.md:43-56`) define los campos estándar de salida (`estado`, `escenarios`, `resultados`, `ganadoras`, `explicacion`, `evidencia`). La propuesta de dominio introduce los 4 estados de compatibilidad temporal de D18 (`compatible`, `incompatible`, `indeterminada`, `no_evaluable`) y las etiquetas de evidencia geográfica de D19 (`nivelEvidencia`, `alcanceGeografico`, `localidad`). Añadir unilateralmente campos nuevos a la respuesta pública violaría el acuerdo entre áreas y podría romper la integración con el frontend.
+
+**Regla de contrato público acordada:** **No se añaden campos definitivos al contrato público de `ResultadoSimulacion` sin acuerdo previo y unánime de Hellen, Alex y Samuel.** En esta revisión v0.3 se mantiene la estructura pública de `contrato-api.md`, se documenta el mapeo conceptual interno a los campos existentes y se registran las alternativas a consensuar.
+
+**Mapeo conceptual propuesto:**
+
+1. **`compatible`:**
+   - La secuencia temporal entre los ciclos es viable.
+   - Si los ciclos disponen de evidencia suficiente (`directa_local` o `extrapolada`) y datos completos, la estrategia se mapea a `elegible: true` y sus puntajes se calculan numéricamente en todos los escenarios.
+2. **`incompatible`:**
+   - La rotación presenta solapamiento temporal o `finca.mesInicio` no cae en la ventana del primer ciclo.
+   - Se mapea a `elegible: false` y se registra el motivo de descarte en `resultados[].motivosDescarte` (así como en el resumen derivado `descartes[]`).
+   - No descalifica a las demás estrategias; si ninguna resulta elegible y no faltan datos esenciales, el estado global de la simulación es `sin_opciones`.
+3. **`indeterminada`:**
+   - La secuencia no puede confirmarse viable ni descartarse categóricamente debido a la amplitud de los rangos `{min, max}` o a la granularidad mensual (D18).
+   - Una estrategia con compatibilidad indeterminada **no puede producir ganadoras ni presentarse como recomendación**.
+   - *Opciones de mapeo a ratificar con Alex y Samuel:*
+     - *Opción A:* Clasificarla como descarte con `elegible: false` y registrar el motivo de indeterminación temporal en `motivosDescarte`.
+     - *Opción B:* Mantener `elegible: false` con `puntajes: null` y registrar la causa en `motivosNoCalculable`.
+4. **`no_evaluable` (o ciclos con evidencia `parcial` o `pendiente`):**
+   - Faltan datos esenciales de ventana o duración (`null`), o el ciclo carece de fuente comprobada.
+   - La estrategia no es elegible para recomendación ni puede ser puntuada.
+   - Se mapea en `resultados[]` con puntajes en `null` y el motivo explícito en `motivosNoCalculable`.
+   - Si faltan datos esenciales para evaluar las estrategias de la simulación, el estado global resultante es `incompleto` y las carencias se enumeran en `evidencia.datosFaltantes`.
+5. **Etiquetado de ciclos con evidencia `extrapolada`:**
+   - La estrategia es evaluable y puntuable, pero debe acompañarse de la advertencia: *«Evidencia extrapolada desde [localidad/alcance]; no validada para Liberia»*.
+   - *Opciones de diseño para no alterar unilateralmente el contrato público:*
+     - *Opción 1 (Sin cambios en `ResultadoSimulacion`):* El frontend de Samuel resuelve la advertencia consultando el catálogo (`GET /api/catalog`) y cruzando la procedencia por `cicloId`.
+     - *Opción 2 (Aprovechar campos existentes):* Incorporar la advertencia en el texto libre de `explicacion` o en el array de cadenas `evidencia.supuestos[]`.
+     - *Opción 3 (Ampliación formal del contrato):* Añadir un campo estructurado de advertencias o metadatos por resultado en `resultados[]` (requiere aprobación conjunta de Alex y Samuel en `docs/contrato-api.md`).
+
+**Estado:** PROPUESTO; pendiente de confirmación técnica con Alex y validación de interfaz con Samuel.
 
 ---
 
@@ -762,6 +1082,7 @@ La Etapa 1 (implementación del catálogo) puede comenzar cuando:
 6. **D6 definido:** escenarios y sus umbrales.
 7. **D4 y D13–D15 resueltas:** `cultivosAnteriores`, regla de cultivos distintos, exposición de `opcionesFinca` y etiquetas.
 8. **Sin contradicciones abiertas** con `docs/contrato-api.md`; cualquier cambio de contrato se registra como propuesta (ver §9).
+9. **D17–D21 ratificadas** por Hellen, Alex y Samuel según §10, **D22 resuelta antes de cargar ciclos con ventana y duración de fuentes distintas**, y **D10** defina la representación de estados/evidencia en la salida. Las rotaciones A, B y C siguen sin validar.
 
 ---
 

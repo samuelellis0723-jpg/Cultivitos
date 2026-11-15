@@ -1,3 +1,4 @@
+
 export const CODIGOS_ERROR_CATALOGO = Object.freeze({
   ESTRUCTURA_INVALIDA: 'ESTRUCTURA_INVALIDA',
   CAMPO_REQUERIDO: 'CAMPO_REQUERIDO',
@@ -13,12 +14,24 @@ export const CODIGOS_ERROR_CATALOGO = Object.freeze({
   PARAMETRO_INCOMPLETO: 'PARAMETRO_INCOMPLETO',
   VALOR_NO_FINITO: 'VALOR_NO_FINITO',
   MES_FUERA_DE_RANGO: 'MES_FUERA_DE_RANGO',
+  RANGO_INVALIDO: 'RANGO_INVALIDO',
   OPCION_INVALIDA: 'OPCION_INVALIDA',
   VALOR_DUPLICADO: 'VALOR_DUPLICADO',
 });
 
-const PRIORIDADES_APROBADAS = new Set(['equilibrio', 'agua', 'suelo']);
-const CLAVES_OPCIONES_FINCA = ['suelo', 'drenaje', 'riego', 'prioridad', 'mesInicio'];
+const PRIORIDADES_APROBADAS = new Set([
+  'equilibrio',
+  'agua',
+  'suelo',
+]);
+
+const CLAVES_OPCIONES_FINCA = [
+  'suelo',
+  'drenaje',
+  'riego',
+  'prioridad',
+  'mesInicio',
+];
 
 export function validarCatalogo(catalogo) {
   const errores = [];
@@ -36,17 +49,31 @@ export function validarCatalogo(catalogo) {
 
   validarVersion(catalogo.version, errores);
 
-  const fuentesPorId = validarFuentes(catalogo.fuentes, errores);
+  const fuentesPorId = validarFuentes(
+    catalogo.fuentes,
+    errores
+  );
+
   const { cultivosPorId, ciclosPorId } = validarCultivos(
     catalogo.cultivos,
     fuentesPorId,
     errores
   );
 
-  validarEstrategias(catalogo.estrategias, fuentesPorId, cultivosPorId, ciclosPorId, errores);
+  validarEstrategias(
+    catalogo.estrategias,
+    fuentesPorId,
+    cultivosPorId,
+    ciclosPorId,
+    errores
+  );
+
   validarOpcionesFinca(catalogo.opcionesFinca, errores);
 
-  return { valido: errores.length === 0, errores };
+  return {
+    valido: errores.length === 0,
+    errores,
+  };
 }
 
 function validarVersion(version, errores) {
@@ -106,7 +133,11 @@ function validarFuentes(fuentes, errores) {
       return;
     }
 
-    if (validarTextoRequerido(fuente.id, `${ruta}.id`, errores)) {
+    if (validarTextoRequerido(
+      fuente.id,
+      `${ruta}.id`,
+      errores
+    )) {
       if (fuentesPorId.has(fuente.id)) {
         agregarError(
           errores,
@@ -119,10 +150,29 @@ function validarFuentes(fuentes, errores) {
       }
     }
 
-    validarTextoRequerido(fuente.titulo, `${ruta}.titulo`, errores);
-    validarTextoOpcional(fuente.url, `${ruta}.url`, errores);
-    validarTextoOpcional(fuente.fecha, `${ruta}.fecha`, errores);
-    validarTextoOpcional(fuente.notas, `${ruta}.notas`, errores);
+    validarTextoRequerido(
+      fuente.titulo,
+      `${ruta}.titulo`,
+      errores
+    );
+
+    validarTextoOpcional(
+      fuente.url,
+      `${ruta}.url`,
+      errores
+    );
+
+    validarTextoOpcional(
+      fuente.fecha,
+      `${ruta}.fecha`,
+      errores
+    );
+
+    validarTextoOpcional(
+      fuente.notas,
+      `${ruta}.notas`,
+      errores
+    );
   });
 
   return fuentesPorId;
@@ -139,6 +189,7 @@ function validarCultivos(cultivos, fuentesPorId, errores) {
       'cultivos',
       'La lista de cultivos es obligatoria.'
     );
+
     return { cultivosPorId, ciclosPorId };
   }
 
@@ -149,6 +200,7 @@ function validarCultivos(cultivos, fuentesPorId, errores) {
       'cultivos',
       'La lista de cultivos debe ser un array.'
     );
+
     return { cultivosPorId, ciclosPorId };
   }
 
@@ -165,7 +217,11 @@ function validarCultivos(cultivos, fuentesPorId, errores) {
       return;
     }
 
-    const idValido = validarTextoRequerido(cultivo.id, `${ruta}.id`, errores);
+    const idValido = validarTextoRequerido(
+      cultivo.id,
+      `${ruta}.id`,
+      errores
+    );
 
     if (idValido) {
       if (cultivosPorId.has(cultivo.id)) {
@@ -180,8 +236,18 @@ function validarCultivos(cultivos, fuentesPorId, errores) {
       }
     }
 
-    validarTextoRequerido(cultivo.nombre, `${ruta}.nombre`, errores);
-    validarReferenciaFuente(cultivo.fuenteId, `${ruta}.fuenteId`, fuentesPorId, errores);
+    validarTextoRequerido(
+      cultivo.nombre,
+      `${ruta}.nombre`,
+      errores
+    );
+
+    validarReferenciaFuente(
+      cultivo.fuenteId,
+      `${ruta}.fuenteId`,
+      fuentesPorId,
+      errores
+    );
 
     validarCiclos(
       cultivo.ciclos,
@@ -196,7 +262,14 @@ function validarCultivos(cultivos, fuentesPorId, errores) {
   return { cultivosPorId, ciclosPorId };
 }
 
-function validarCiclos(ciclos, cultivoId, ruta, fuentesPorId, ciclosPorId, errores) {
+function validarCiclos(
+  ciclos,
+  cultivoId,
+  ruta,
+  fuentesPorId,
+  ciclosPorId,
+  errores
+) {
   if (ciclos === undefined || ciclos === null) {
     agregarError(
       errores,
@@ -230,7 +303,11 @@ function validarCiclos(ciclos, cultivoId, ruta, fuentesPorId, ciclosPorId, error
       return;
     }
 
-    if (validarTextoRequerido(ciclo.id, `${rutaCiclo}.id`, errores)) {
+    if (validarTextoRequerido(
+      ciclo.id,
+      `${rutaCiclo}.id`,
+      errores
+    )) {
       if (ciclosPorId.has(ciclo.id)) {
         agregarError(
           errores,
@@ -249,7 +326,11 @@ function validarCiclos(ciclos, cultivoId, ruta, fuentesPorId, ciclosPorId, error
       errores
     );
 
-    if (cultivoIdValido && cultivoId !== null && ciclo.cultivoId !== cultivoId) {
+    if (
+      cultivoIdValido &&
+      cultivoId !== null &&
+      ciclo.cultivoId !== cultivoId
+    ) {
       agregarError(
         errores,
         CODIGOS_ERROR_CATALOGO.CICLO_NO_PERTENECE_AL_CULTIVO,
@@ -258,9 +339,31 @@ function validarCiclos(ciclos, cultivoId, ruta, fuentesPorId, ciclosPorId, error
       );
     }
 
-    validarVentanaSiembra(ciclo.ventanaSiembra, `${rutaCiclo}.ventanaSiembra`, errores);
-    validarDuracionMeses(ciclo.duracionMeses, `${rutaCiclo}.duracionMeses`, errores);
-    validarReferenciaFuente(ciclo.fuenteId, `${rutaCiclo}.fuenteId`, fuentesPorId, errores);
+    validarVentanaSiembra(
+      ciclo.ventanaSiembra,
+      `${rutaCiclo}.ventanaSiembra`,
+      errores
+    );
+
+    validarDuracionMeses(
+      ciclo.duracionMeses,
+      `${rutaCiclo}.duracionMeses`,
+      errores
+    );
+
+    // D17: Validación de duración en días.
+    validarDuracionDias(
+      ciclo.duracionDias,
+      `${rutaCiclo}.duracionDias`,
+      errores
+    );
+
+    validarReferenciaFuente(
+      ciclo.fuenteId,
+      `${rutaCiclo}.fuenteId`,
+      fuentesPorId,
+      errores
+    );
   });
 }
 
@@ -269,8 +372,17 @@ function validarVentanaSiembra(ventana, ruta, errores) {
     return;
   }
 
-  validarMes(ventana.inicioMes, `${ruta}.inicioMes`, errores);
-  validarMes(ventana.finMes, `${ruta}.finMes`, errores);
+  validarMes(
+    ventana.inicioMes,
+    `${ruta}.inicioMes`,
+    errores
+  );
+
+  validarMes(
+    ventana.finMes,
+    `${ruta}.finMes`,
+    errores
+  );
 }
 
 function validarMes(valor, ruta, errores) {
@@ -284,7 +396,12 @@ function validarMes(valor, ruta, errores) {
     return;
   }
 
-  if (typeof valor !== 'number' || !Number.isInteger(valor) || valor < 1 || valor > 12) {
+  if (
+    typeof valor !== 'number' ||
+    !Number.isInteger(valor) ||
+    valor < 1 ||
+    valor > 12
+  ) {
     agregarError(
       errores,
       CODIGOS_ERROR_CATALOGO.MES_FUERA_DE_RANGO,
@@ -309,12 +426,68 @@ function validarDuracionMeses(valor, ruta, errores) {
     return;
   }
 
-  if (typeof valor !== 'number' || !Number.isFinite(valor)) {
+  if (
+    typeof valor !== 'number' ||
+    !Number.isFinite(valor)
+  ) {
     agregarError(
       errores,
       CODIGOS_ERROR_CATALOGO.TIPO_INVALIDO,
       ruta,
       'La duración en meses debe ser un número finito o null.'
+    );
+  }
+}
+
+// D17: Duración en días.
+// null significa duración pendiente de validación.
+// El campo omitido se permite por compatibilidad heredada.
+function validarDuracionDias(valor, ruta, errores) {
+  if (valor === undefined || valor === null) {
+    return;
+  }
+
+  if (!esObjetoPlano(valor)) {
+    agregarError(
+      errores,
+      CODIGOS_ERROR_CATALOGO.TIPO_INVALIDO,
+      ruta,
+      'La duración en días debe ser null o un objeto { min, max }.'
+    );
+    return;
+  }
+
+  const { min, max } = valor;
+
+  if (
+    !Number.isInteger(min) ||
+    !Number.isInteger(max)
+  ) {
+    agregarError(
+      errores,
+      CODIGOS_ERROR_CATALOGO.RANGO_INVALIDO,
+      ruta,
+      'Los límites min y max deben ser números enteros.'
+    );
+    return;
+  }
+
+  if (min < 1) {
+    agregarError(
+      errores,
+      CODIGOS_ERROR_CATALOGO.RANGO_INVALIDO,
+      ruta,
+      'La duración mínima debe ser mayor o igual a 1 día.'
+    );
+    return;
+  }
+
+  if (max < min) {
+    agregarError(
+      errores,
+      CODIGOS_ERROR_CATALOGO.RANGO_INVALIDO,
+      ruta,
+      'La duración máxima no puede ser menor que la mínima.'
     );
   }
 }
@@ -361,7 +534,11 @@ function validarEstrategias(
       return;
     }
 
-    if (validarTextoRequerido(estrategia.id, `${ruta}.id`, errores)) {
+    if (validarTextoRequerido(
+      estrategia.id,
+      `${ruta}.id`,
+      errores
+    )) {
       if (estrategiasPorId.has(estrategia.id)) {
         agregarError(
           errores,
@@ -374,10 +551,33 @@ function validarEstrategias(
       }
     }
 
-    validarTextoRequerido(estrategia.nombre, `${ruta}.nombre`, errores);
-    validarTextoOpcional(estrategia.descripcion, `${ruta}.descripcion`, errores);
-    validarReferenciaFuente(estrategia.fuenteId, `${ruta}.fuenteId`, fuentesPorId, errores);
-    validarPasos(estrategia.pasos, ruta, cultivosPorId, ciclosPorId, errores);
+    validarTextoRequerido(
+      estrategia.nombre,
+      `${ruta}.nombre`,
+      errores
+    );
+
+    validarTextoOpcional(
+      estrategia.descripcion,
+      `${ruta}.descripcion`,
+      errores
+    );
+
+    validarReferenciaFuente(
+      estrategia.fuenteId,
+      `${ruta}.fuenteId`,
+      fuentesPorId,
+      errores
+    );
+
+    validarPasos(
+      estrategia.pasos,
+      ruta,
+      cultivosPorId,
+      ciclosPorId,
+      errores
+    );
+
     validarParametrosPuntuacion(
       estrategia.parametrosPuntuacion,
       ruta,
@@ -387,7 +587,13 @@ function validarEstrategias(
   });
 }
 
-function validarPasos(pasos, rutaEstrategia, cultivosPorId, ciclosPorId, errores) {
+function validarPasos(
+  pasos,
+  rutaEstrategia,
+  cultivosPorId,
+  ciclosPorId,
+  errores
+) {
   const ruta = `${rutaEstrategia}.pasos`;
 
   if (pasos === undefined || pasos === null) {
@@ -432,7 +638,10 @@ function validarPasos(pasos, rutaEstrategia, cultivosPorId, ciclosPorId, errores
       return;
     }
 
-    if (!Number.isInteger(paso.orden) || paso.orden !== indice + 1) {
+    if (
+      !Number.isInteger(paso.orden) ||
+      paso.orden !== indice + 1
+    ) {
       agregarError(
         errores,
         CODIGOS_ERROR_CATALOGO.ORDEN_INVALIDO,
@@ -446,7 +655,10 @@ function validarPasos(pasos, rutaEstrategia, cultivosPorId, ciclosPorId, errores
       `${rutaPaso}.cultivoId`,
       errores
     );
-    const cultivoExiste = cultivoIdValido && cultivosPorId.has(paso.cultivoId);
+
+    const cultivoExiste =
+      cultivoIdValido &&
+      cultivosPorId.has(paso.cultivoId);
 
     if (cultivoIdValido && !cultivoExiste) {
       agregarError(
@@ -479,7 +691,10 @@ function validarPasos(pasos, rutaEstrategia, cultivosPorId, ciclosPorId, errores
       return;
     }
 
-    if (cultivoExiste && ciclo.cultivoId !== paso.cultivoId) {
+    if (
+      cultivoExiste &&
+      ciclo.cultivoId !== paso.cultivoId
+    ) {
       agregarError(
         errores,
         CODIGOS_ERROR_CATALOGO.CICLO_NO_PERTENECE_AL_CULTIVO,
@@ -490,7 +705,12 @@ function validarPasos(pasos, rutaEstrategia, cultivosPorId, ciclosPorId, errores
   });
 }
 
-function validarParametrosPuntuacion(parametros, rutaEstrategia, fuentesPorId, errores) {
+function validarParametrosPuntuacion(
+  parametros,
+  rutaEstrategia,
+  fuentesPorId,
+  errores
+) {
   const ruta = `${rutaEstrategia}.parametrosPuntuacion`;
 
   if (parametros === undefined || parametros === null) {
@@ -528,7 +748,11 @@ function validarParametrosPuntuacion(parametros, rutaEstrategia, fuentesPorId, e
       return;
     }
 
-    if (validarTextoRequerido(parametro.id, `${rutaParametro}.id`, errores)) {
+    if (validarTextoRequerido(
+      parametro.id,
+      `${rutaParametro}.id`,
+      errores
+    )) {
       if (parametrosPorId.has(parametro.id)) {
         agregarError(
           errores,
@@ -548,7 +772,10 @@ function validarParametrosPuntuacion(parametros, rutaEstrategia, fuentesPorId, e
         `${rutaParametro}.valor`,
         'El valor del parámetro es obligatorio.'
       );
-    } else if (typeof parametro.valor !== 'number' || !Number.isFinite(parametro.valor)) {
+    } else if (
+      typeof parametro.valor !== 'number' ||
+      !Number.isFinite(parametro.valor)
+    ) {
       agregarError(
         errores,
         CODIGOS_ERROR_CATALOGO.VALOR_NO_FINITO,
@@ -617,11 +844,21 @@ function validarOpcionesFinca(opcionesFinca, errores) {
       continue;
     }
 
-    validarListaOpciones(opcionesFinca[clave], `opcionesFinca.${clave}`, clave, errores);
+    validarListaOpciones(
+      opcionesFinca[clave],
+      `opcionesFinca.${clave}`,
+      clave,
+      errores
+    );
   }
 }
 
-function validarListaOpciones(lista, ruta, clave, errores) {
+function validarListaOpciones(
+  lista,
+  ruta,
+  clave,
+  errores
+) {
   if (!Array.isArray(lista)) {
     agregarError(
       errores,
@@ -648,9 +885,17 @@ function validarListaOpciones(lista, ruta, clave, errores) {
     }
 
     if (clave === 'mesInicio') {
-      validarMes(opcion.valor, `${rutaOpcion}.valor`, errores);
+      validarMes(
+        opcion.valor,
+        `${rutaOpcion}.valor`,
+        errores
+      );
 
-      if (Number.isInteger(opcion.valor) && opcion.valor >= 1 && opcion.valor <= 12) {
+      if (
+        Number.isInteger(opcion.valor) &&
+        opcion.valor >= 1 &&
+        opcion.valor <= 12
+      ) {
         if (valores.has(opcion.valor)) {
           agregarError(
             errores,
@@ -670,7 +915,10 @@ function validarListaOpciones(lista, ruta, clave, errores) {
         'El valor de la opción debe ser un string no vacío.'
       );
     } else {
-      if (clave === 'prioridad' && !PRIORIDADES_APROBADAS.has(opcion.valor)) {
+      if (
+        clave === 'prioridad' &&
+        !PRIORIDADES_APROBADAS.has(opcion.valor)
+      ) {
         agregarError(
           errores,
           CODIGOS_ERROR_CATALOGO.OPCION_INVALIDA,
@@ -702,7 +950,12 @@ function validarListaOpciones(lista, ruta, clave, errores) {
   });
 }
 
-function validarReferenciaFuente(fuenteId, ruta, fuentesPorId, errores) {
+function validarReferenciaFuente(
+  fuenteId,
+  ruta,
+  fuentesPorId,
+  errores
+) {
   if (!validarTextoRequerido(fuenteId, ruta, errores)) {
     return;
   }
@@ -781,19 +1034,33 @@ function validarObjetoRequerido(valor, ruta, errores) {
 }
 
 function esObjetoPlano(valor) {
-  if (typeof valor !== 'object' || valor === null || Array.isArray(valor)) {
+  if (
+    typeof valor !== 'object' ||
+    valor === null ||
+    Array.isArray(valor)
+  ) {
     return false;
   }
 
   const prototipo = Object.getPrototypeOf(valor);
 
-  return prototipo === Object.prototype || prototipo === null;
+  return (
+    prototipo === Object.prototype ||
+    prototipo === null
+  );
 }
 
 function esCadenaNoVacia(valor) {
-  return typeof valor === 'string' && valor.trim() !== '';
+  return (
+    typeof valor === 'string' &&
+    valor.trim() !== ''
+  );
 }
 
 function agregarError(errores, codigo, campo, motivo) {
-  errores.push({ codigo, campo, motivo });
+  errores.push({
+    codigo,
+    campo,
+    motivo,
+  });
 }
