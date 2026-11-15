@@ -118,8 +118,8 @@ export const DEMO_CATALOG = {
   ],
   estrategias: [
     {
-      id: 'A',
-      nombre: 'Estrategia A (demostrativa)',
+      id: 'E1',
+      nombre: 'Estrategia E1 (demostrativa)',
       descripcion: 'Secuencia demostrativa de dos ciclos ordenados para validar la matriz de comparación.',
       pasos: [
         { orden: 1, cultivoId: 'maiz-demo', cicloId: 'maiz-c1' },
@@ -128,8 +128,8 @@ export const DEMO_CATALOG = {
       fuenteId: 'fuente-demo-contrato',
     },
     {
-      id: 'B',
-      nombre: 'Estrategia B (demostrativa)',
+      id: 'E2',
+      nombre: 'Estrategia E2 (demostrativa)',
       descripcion: 'Secuencia demostrativa con mejor desempeño en escenario seco, pero mayor brecha en húmedo.',
       pasos: [
         { orden: 1, cultivoId: 'sorgo-demo', cicloId: 'sorgo-c1' },
@@ -138,8 +138,8 @@ export const DEMO_CATALOG = {
       fuenteId: 'fuente-demo-contrato',
     },
     {
-      id: 'C',
-      nombre: 'Estrategia C (demostrativa)',
+      id: 'E3',
+      nombre: 'Estrategia E3 (demostrativa)',
       descripcion: 'Secuencia demostrativa equilibrada entre escenarios según la matriz ficticia del contrato.',
       pasos: [
         { orden: 1, cultivoId: 'maiz-demo', cicloId: 'maiz-c1' },
@@ -260,7 +260,7 @@ export const DEMO_SIMULATION_CASES = {
     escenarios: ['habitual', 'seco', 'humedo'],
     resultados: [
       {
-        estrategiaId: 'A',
+        estrategiaId: 'E1',
         elegible: true,
         puntajes: { habitual: 90, seco: 35, humedo: 55 },
         peorArrepentimiento: 45,
@@ -269,7 +269,7 @@ export const DEMO_SIMULATION_CASES = {
         motivosDescarte: [],
       },
       {
-        estrategiaId: 'B',
+        estrategiaId: 'E2',
         elegible: true,
         puntajes: { habitual: 75, seco: 80, humedo: 50 },
         peorArrepentimiento: 25,
@@ -278,7 +278,7 @@ export const DEMO_SIMULATION_CASES = {
         motivosDescarte: [],
       },
       {
-        estrategiaId: 'C',
+        estrategiaId: 'E3',
         elegible: true,
         puntajes: { habitual: 80, seco: 70, humedo: 75 },
         peorArrepentimiento: 10,
@@ -288,9 +288,9 @@ export const DEMO_SIMULATION_CASES = {
       },
     ],
     descartes: [],
-    ganadoras: ['C'],
+    ganadoras: ['E3'],
     explicacion:
-      'Ejemplo ficticio del contrato: C obtiene el menor peor arrepentimiento (10) frente a B (25) y A (45).',
+      'Ejemplo ficticio del contrato: E3 obtiene el menor peor arrepentimiento (10) frente a E2 (25) y E1 (45).',
     evidencia: {
       origen: 'demo',
       fuentes: DEMO_CATALOG.fuentes,
@@ -315,7 +315,7 @@ export const DEMO_SIMULATION_CASES = {
     escenarios: ['habitual', 'seco', 'humedo'],
     resultados: [
       {
-        estrategiaId: 'A',
+        estrategiaId: 'E1',
         elegible: true,
         puntajes: { habitual: 90, seco: 35, humedo: 55 },
         peorArrepentimiento: 45,
@@ -324,7 +324,7 @@ export const DEMO_SIMULATION_CASES = {
         motivosDescarte: [],
       },
       {
-        estrategiaId: 'B',
+        estrategiaId: 'E2',
         elegible: true,
         puntajes: { habitual: 80, seco: 80, humedo: 65 },
         peorArrepentimiento: 10,
@@ -333,7 +333,7 @@ export const DEMO_SIMULATION_CASES = {
         motivosDescarte: [],
       },
       {
-        estrategiaId: 'C',
+        estrategiaId: 'E3',
         elegible: true,
         puntajes: { habitual: 80, seco: 70, humedo: 75 },
         peorArrepentimiento: 10,
@@ -343,9 +343,9 @@ export const DEMO_SIMULATION_CASES = {
       },
     ],
     descartes: [],
-    ganadoras: ['B', 'C'],
+    ganadoras: ['E2', 'E3'],
     explicacion:
-      'Empate minimax demostrativo: B y C comparten el menor peor arrepentimiento (10). Ninguna se elige por encima de la otra.',
+      'Empate minimax demostrativo: E2 y E3 comparten el menor peor arrepentimiento (10). Ninguna se elige por encima de la otra.',
     evidencia: {
       origen: 'demo',
       fuentes: DEMO_CATALOG.fuentes,
@@ -363,7 +363,7 @@ export const DEMO_SIMULATION_CASES = {
     escenarios: ['habitual', 'seco', 'humedo'],
     resultados: [
       {
-        estrategiaId: 'A',
+        estrategiaId: 'E1',
         elegible: true,
         puntajes: { habitual: 90, seco: null, humedo: 55 },
         peorArrepentimiento: null,
@@ -374,7 +374,7 @@ export const DEMO_SIMULATION_CASES = {
         motivosDescarte: [],
       },
       {
-        estrategiaId: 'B',
+        estrategiaId: 'E2',
         elegible: true,
         puntajes: { habitual: 0, seco: 80, humedo: 50 },
         peorArrepentimiento: null,
@@ -383,7 +383,7 @@ export const DEMO_SIMULATION_CASES = {
         motivosDescarte: [],
       },
       {
-        estrategiaId: 'C',
+        estrategiaId: 'E3',
         elegible: true,
         puntajes: { habitual: 80, seco: null, humedo: 75 },
         peorArrepentimiento: null,
@@ -418,7 +418,7 @@ export const DEMO_SIMULATION_CASES = {
     escenarios: ['habitual', 'seco', 'humedo'],
     resultados: [
       {
-        estrategiaId: 'A',
+        estrategiaId: 'E1',
         elegible: false,
         puntajes: { habitual: null, seco: null, humedo: null },
         peorArrepentimiento: null,
@@ -427,7 +427,7 @@ export const DEMO_SIMULATION_CASES = {
         motivosDescarte: ['Restricción de riego/drenaje incompatible en el perfil demostrativo.'],
       },
       {
-        estrategiaId: 'B',
+        estrategiaId: 'E2',
         elegible: false,
         puntajes: { habitual: null, seco: null, humedo: null },
         peorArrepentimiento: null,
@@ -436,7 +436,7 @@ export const DEMO_SIMULATION_CASES = {
         motivosDescarte: ['Mes de inicio fuera de la ventana demostrativa para Ciclo 1.'],
       },
       {
-        estrategiaId: 'C',
+        estrategiaId: 'E3',
         elegible: false,
         puntajes: { habitual: null, seco: null, humedo: null },
         peorArrepentimiento: null,
@@ -446,9 +446,9 @@ export const DEMO_SIMULATION_CASES = {
       },
     ],
     descartes: [
-      { estrategiaId: 'A', motivos: ['Restricción de riego/drenaje incompatible en el perfil demostrativo.'] },
-      { estrategiaId: 'B', motivos: ['Mes de inicio fuera de la ventana demostrativa para Ciclo 1.'] },
-      { estrategiaId: 'C', motivos: ['Suelo declarado incompatible con la regla demostrativa de rotación.'] },
+      { estrategiaId: 'E1', motivos: ['Restricción de riego/drenaje incompatible en el perfil demostrativo.'] },
+      { estrategiaId: 'E2', motivos: ['Mes de inicio fuera de la ventana demostrativa para Ciclo 1.'] },
+      { estrategiaId: 'E3', motivos: ['Suelo declarado incompatible con la regla demostrativa de rotación.'] },
     ],
     ganadoras: [],
     explicacion: 'Ninguna estrategia resultó elegible para el perfil actual. Edita el perfil de la finca para revisar opciones.',

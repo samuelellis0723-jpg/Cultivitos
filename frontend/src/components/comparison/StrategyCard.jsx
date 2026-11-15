@@ -7,6 +7,12 @@ const SCENARIO_LABELS = {
   humedo: 'Más lluvioso',
 };
 
+function readableWarning(warning) {
+  const field = /^FINCA_DESCONOCIDA: (suelo|drenaje|riego);/.exec(warning)?.[1];
+  if (field) return `No conocemos el ${field} de la finca. Este dato faltante no constituye una restricción comprobada.`;
+  return warning;
+}
+
 export default function StrategyCard({
   resultado,
   estrategia,
@@ -23,7 +29,9 @@ export default function StrategyCard({
   const provisional = Array.isArray(estrategia?.parametrosPuntuacion) && estrategia.parametrosPuntuacion.length === 0;
   const title = estrategia?.nombre || `Estrategia ${resultado.estrategiaId} (sin entrada en catálogo)`;
   const steps = estrategia ? formatOrderedSteps(estrategia, cultivos) : [];
-  const canSelect = allowSelection && resultado.elegible;
+  const isDiscarded = resultado.elegible === false;
+  const isUnknownEligibility = resultado.elegible === null;
+  const canSelect = allowSelection && resultado.elegible === true;
 
   const content = (
     <>
@@ -50,8 +58,11 @@ export default function StrategyCard({
               {isSelected ? (
                 <span className="fv-badge fv-badge-live">Tu selección</span>
               ) : null}
-              {!resultado.elegible ? (
+              {isDiscarded ? (
                 <span className="fv-badge fv-badge-error">Descartada</span>
+              ) : null}
+              {isUnknownEligibility ? (
+                <span className="fv-badge fv-badge-neutral">Elegibilidad no evaluable</span>
               ) : null}
               {provisional ? (
                 <span className="fv-badge fv-badge-demo">Provisional · reglas pendientes</span>
@@ -87,7 +98,16 @@ export default function StrategyCard({
         </p>
       ) : null}
 
-      {!resultado.elegible ? (
+      {resultado.advertencias?.length > 0 ? (
+        <section className="fv-card-soft" aria-label={`Advertencias de ${title}`} style={{ marginTop: '12px' }}>
+          <h3>Advertencias</h3>
+          <ul>
+            {resultado.advertencias.map((aviso, index) => <li key={index}>{readableWarning(aviso)}</li>)}
+          </ul>
+        </section>
+      ) : null}
+
+      {isDiscarded ? (
         <div className="fv-card-soft" style={{ marginTop: '12px' }}>
           <strong>Motivos de descarte:</strong>
           <ul style={{ margin: '6px 0 0 18px', padding: 0 }}>
@@ -143,7 +163,7 @@ export default function StrategyCard({
   }
 
   return (
-    <article className={`fv-strategy-card${!resultado.elegible ? ' is-discarded' : ''}`}>
+    <article className={`fv-strategy-card${isDiscarded ? ' is-discarded' : ''}`}>
       {content}
     </article>
   );

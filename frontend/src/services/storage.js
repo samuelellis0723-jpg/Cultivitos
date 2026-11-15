@@ -44,6 +44,18 @@ export function clearDraft() {
   }
 }
 
+// Solo identifica el formato local demo anterior. Nunca cambia IDs ni almacenamiento.
+export function isLegacyDemoComparison(entry) {
+  const ids = (items, key) => Array.isArray(items) && items.length === 3 &&
+    ['A', 'B', 'C'].every(id => items.some(item => item?.[key] === id));
+  return entry?.schemaVersion === 2 && entry.dataMode === 'demo' &&
+    entry.catalog?.version === 'demo-0.2' &&
+    entry.simulation?.evidencia?.origen === 'demo' &&
+    entry.simulation.evidencia.motorVersion === 'demo-0.2' &&
+    entry.simulation.evidencia.catalogoVersion === 'demo-0.2' &&
+    ids(entry.catalog.estrategias, 'id') && ids(entry.simulation.resultados, 'estrategiaId');
+}
+
 export function loadSavedComparisons() {
   try {
     const raw = window.localStorage.getItem(COMPARISONS_KEY);

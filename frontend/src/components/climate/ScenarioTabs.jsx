@@ -120,7 +120,7 @@ export default function ScenarioTabs({
                     </span>
                     {!simData ? (
                       <span className="fv-hint">Pendiente de cálculo</span>
-                    ) : result && !result.elegible ? (
+                    ) : result && result.elegible === false ? (
                       <span className="fv-badge fv-badge-neutral">Descartada</span>
                     ) : score === null || score === undefined ? (
                       <span className="fv-badge fv-badge-error" title={reason || ''}>
