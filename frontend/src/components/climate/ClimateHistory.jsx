@@ -18,7 +18,7 @@ export default function ClimateHistory({ state, onRetry }) {
     return (
       <section className="fv-card" aria-labelledby="climate-history-title">
         <h2 id="climate-history-title" className="fv-section-title">
-          1. Historial climático observado
+          1. Historial climático 2015–2024
         </h2>
         <LoadingState message="Consultando serie histórica de temperatura y precipitación…" />
       </section>
@@ -29,7 +29,7 @@ export default function ClimateHistory({ state, onRetry }) {
     return (
       <section className="fv-card" aria-labelledby="climate-history-title">
         <h2 id="climate-history-title" className="fv-section-title">
-          1. Historial climático observado
+          1. Historial climático 2015–2024
         </h2>
         <ErrorState
           title="Historial climático no disponible"
@@ -43,17 +43,20 @@ export default function ClimateHistory({ state, onRetry }) {
   const data = state.data;
   const precip = data.variables?.precipitacion;
   const temp = data.variables?.temperaturaMedia;
-  const sourceTitle = data.fuentes?.[0]?.titulo || data.fuentes?.[0]?.proveedor || 'Fuente sin nombre';
+  const sources = data.fuentes ?? [];
+  const displayDate = (value) => value && /^\d{8}$/.test(value)
+    ? `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}`
+    : value || '—';
 
   return (
     <section className="fv-card" aria-labelledby="climate-history-title">
       <div className="fv-page-context" style={{ marginBottom: '8px' }}>
         <div>
           <h2 id="climate-history-title" className="fv-section-title">
-            1. Historial climático observado
+            1. Historial climático 2015–2024
           </h2>
           <p className="fv-section-desc">
-            Serie diaria histórica. Los días sin registro se muestran como huecos vacíos, nunca como cero.
+            Observaciones diarias entre 2015 y 2024. No representa el tiempo actual ni un pronóstico. Los días sin registro se muestran como huecos, nunca como cero.
           </p>
         </div>
         <DataOriginBadge origin={data.origen} antiguedadHoras={data.antiguedadHoras} />
@@ -108,12 +111,12 @@ export default function ClimateHistory({ state, onRetry }) {
       <div className="fv-meta-strip">
         <div>
           <span className="fv-meta-item-label">Fuente</span>
-          <span>{sourceTitle}</span>
+          <span>{sources.length ? sources.map((source, index) => <span key={source.id || index}>{index ? ' · ' : ''}{source.titulo || source.proveedor || source.id || 'Fuente'}{source.urlConsulta && /^https?:\/\//.test(source.urlConsulta) ? <> · <a href={source.urlConsulta} target="_blank" rel="noopener noreferrer">Consultar fuente</a></> : null}{source.origen ? <> · <DataOriginBadge origin={source.origen} />{source.origen === 'backup' && source.antiguedad ? ` · ${source.antiguedad}` : ''}</> : null}</span>) : 'Fuente no informada'}</span>
         </div>
         <div>
           <span className="fv-meta-item-label">Período</span>
           <span>
-            {data.periodo?.inicio || '—'} a {data.periodo?.fin || '—'} ({data.resolucion})
+            {displayDate(data.periodo?.inicio)} a {displayDate(data.periodo?.fin)} · {data.resolucion}
           </span>
         </div>
         <div>
@@ -128,7 +131,7 @@ export default function ClimateHistory({ state, onRetry }) {
         <div>
           <span className="fv-meta-item-label">Cobertura y consulta</span>
           <span>
-            Precip: {precip?.cobertura?.porcentaje ?? '—'}% · Temp: {temp?.cobertura?.porcentaje ?? '—'}%
+            Precip: {precip?.cobertura?.porcentaje ?? '—'}% · Temp. media: {temp?.cobertura?.porcentaje ?? '—'}% · Temp. máxima: {data.variables?.temperaturaMaxima?.cobertura?.porcentaje ?? '—'}%
             {precip?.fechaConsulta ? ` · ${precip.fechaConsulta.slice(0, 10)}` : ''}
           </span>
         </div>

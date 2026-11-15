@@ -63,3 +63,94 @@ test('Explora mueve foco con flechas y no consulta período oculto', async ({ pa
   await tab.focus(); await tab.press('End');
   await expect(page.getByRole('tab', { name: 'Más lluvioso' })).toBeFocused();
 });
+
+function climateResponse(latitude, longitude) {
+  const start = new Date(Date.UTC(2015, 0, 1));
+  const end = new Date(Date.UTC(2025, 0, 1));
+  const serie = [];
+  for (let day = new Date(start); day < end; day.setUTCDate(day.getUTCDate() + 1)) {
+    serie.push({ fecha: day.toISOString().slice(0, 10).replaceAll('-', ''), valor: null });
+  }
+  const days = serie.length;
+  const vars = Object.fromEntries(['precipitacion', 'temperaturaMedia', 'temperaturaMaxima'].map((key) => [key, {
+    unidad: key === 'precipitacion' ? 'mm' : '°C', fechas: { inicio: '20150101', fin: '20241231' },
+    procedencia: 'live', fechaConsulta: '2026-11-15T12:00:00Z', fuenteId: 'sim-api',
+    cobertura: { diasEsperados: days, diasPresentes: 0, porcentaje: 0, faltantes: serie.map(item => item.fecha) }, serie,
+  }]));
+  return {
+    coordenadas: { solicitadas: { latitude, longitude }, devueltas: { latitude, longitude } },
+    periodo: { inicio: '20150101', fin: '20241231' }, resolucion: 'diaria', origen: 'live',
+    fuentes: [{ id: 'sim-api', proveedor: 'Respuesta simulada para pruebas', urlConsulta: 'https://example.org/sim',
+      coordenadasSolicitadas: { latitude, longitude }, coordenadasDevueltas: { latitude, longitude },
+      periodo: { inicio: '20150101', fin: '20241231' }, unidades: { precipitacion: 'mm', temperaturaMedia: '°C', temperaturaMaxima: '°C' },
+      fechaConsulta: '2026-11-15T12:00:00Z', cobertura: { porcentaje: 0 }, origen: 'live' }], variables: vars,
+  };
+}
+
+test('historial automático corresponde a ubicación y muestra período, fuente y procedencia', async ({ page }) => {
+  const selected = { ...finca, latitude: 10.63, longitude: -85.44 };
+  await page.route('**/api/**', async route => {
+    const url = new URL(route.request().url());
+    if (url.pathname.endsWith('/catalog')) return route.fulfill({ json: DEMO_CATALOG });
+    if (url.pathname.endsWith('/climate/history')) {
+      expect(url.searchParams.get('latitude')).toBe('10.63');
+      expect(url.searchParams.get('longitude')).toBe('-85.44');
+      expect(url.searchParams.get('start')).toBe('20150101');
+      expect(url.searchParams.get('end')).toBe('20241231');
+      return route.fulfill({ json: climateResponse(10.63, -85.44) });
+    }
+    return route.fulfill({ status: 503, json: { error: { message: 'API pendiente' } } });
+  });
+  await page.goto('/');
+  await page.evaluate(({ draft, version }) => localStorage.setItem('fieldverse.draft.v1', JSON.stringify({ schemaVersion: 1, finca: draft, catalogVersion: version })), { draft: selected, version: DEMO_CATALOG.version });
+  await page.goto('/');
+  await page.reload();
+  await page.getByRole('button', { name: 'Explorar mi finca' }).click();
+  await expect(page).toHaveURL(/\/explora$/);
+  await expect(page.getByRole('heading', { name: /Historial climático 2015–2024/ })).toBeVisible();
+  await expect(page.getByText('10.63, -85.44', { exact: true })).toBeVisible();
+  await expect(page.getByText('2015-01-01 a 2024-12-31')).toBeVisible();
+  await expect(page.getByText('Respuesta simulada para pruebas')).toBeVisible();
+  await expect(page.getByText('Datos reales · consulta directa', { exact: true }).first()).toBeVisible();
+});
+
+test('una respuesta tardía de la ubicación anterior no reemplaza el historial nuevo', async ({ page }) => {
+  let releaseOld;
+  let oldResponseStarted;
+  const oldStarted = new Promise(resolve => { oldResponseStarted = resolve; });
+  const oldGate = new Promise(resolve => { releaseOld = resolve; });
+  let historyCount = 0;
+  await page.route('**/api/**', async route => {
+    const url = new URL(route.request().url());
+    if (url.pathname.endsWith('/catalog')) return route.fulfill({ json: DEMO_CATALOG });
+    if (url.pathname.endsWith('/climate/history')) {
+      historyCount += 1;
+      const latitude = Number(url.searchParams.get('latitude'));
+      const longitude = Number(url.searchParams.get('longitude'));
+      if (latitude === 9.93) {
+        oldResponseStarted();
+        await oldGate;
+        try { await route.fulfill({ json: climateResponse(latitude, longitude) }); } catch { /* The browser may abort the superseded request. */ }
+      } else {
+        await route.fulfill({ json: climateResponse(latitude, longitude) });
+      }
+      return;
+    }
+    return route.fulfill({ status: 503, json: { error: { message: 'API pendiente' } } });
+  });
+  await page.goto('/');
+  await page.evaluate(({ draft, version }) => localStorage.setItem('fieldverse.draft.v1', JSON.stringify({ schemaVersion: 1, finca: draft, catalogVersion: version })), { draft: finca, version: DEMO_CATALOG.version });
+  await page.reload();
+  await page.getByRole('button', { name: 'Explorar mi finca' }).click();
+  await oldStarted;
+  await page.getByRole('link', { name: 'Editar finca' }).click();
+  await page.getByLabel('Latitud', { exact: true }).fill('10.63');
+  await page.getByLabel('Longitud', { exact: true }).fill('-85.44');
+  await page.getByRole('button', { name: 'Explorar mi finca' }).click();
+  await expect(page.getByText('10.63, -85.44', { exact: true })).toBeVisible();
+  await expect(page.getByText('9.93, -84.09')).toHaveCount(0);
+  releaseOld();
+  await page.waitForTimeout(250);
+  await expect(page.getByText('10.63, -85.44', { exact: true })).toBeVisible();
+  expect(historyCount).toBeGreaterThanOrEqual(2);
+});

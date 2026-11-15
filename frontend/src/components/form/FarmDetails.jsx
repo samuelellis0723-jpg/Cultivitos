@@ -19,10 +19,11 @@ export default function FarmDetails({
       open={forceOpen || hasNestedError || undefined}
     >
       <summary className="fv-details-summary">
-        <span>Suelo, drenaje, historial y mes de inicio</span>
+        <span>Datos de tu parcela y de tu próxima siembra</span>
         <Icon name="chevronDown" size={20} />
       </summary>
       <div className="fv-details-body">
+        <p className="fv-section-desc fv-form-section-full">El clima se consulta automáticamente según la ubicación. Completa lo que conozcas de tu parcela.</p>
         <div className="fv-field">
           <label className="fv-label" htmlFor="finca-suelo">
             Tipo de suelo
@@ -75,11 +76,12 @@ export default function FarmDetails({
             id="finca-mes-inicio"
             name="mesInicio"
             className="fv-select"
-            value={draft.mesInicio}
+            value={draft.mesInicio ?? ''}
             onChange={(e) => onChange('mesInicio', Number(e.target.value))}
             aria-invalid={Boolean(errors.mesInicio)}
             aria-describedby={errors.mesInicio ? 'mesInicio-error' : 'mesInicio-hint'}
           >
+            <option value="" disabled>Elige un mes</option>
             {(catalog?.opcionesFinca?.mesInicio ?? []).map((opt) => (
               <option key={opt.valor} value={opt.valor}>
                 {opt.valor} — {opt.etiqueta}

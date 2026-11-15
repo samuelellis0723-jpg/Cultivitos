@@ -56,6 +56,8 @@ test('riego requiere precisar tipo y conserva contrato de entrada', async ({ pag
   await page.getByRole('button', { name: 'Guardar y salir' }).click();
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('fieldverse.draft.v1')).finca.riego)).toBe('');
   await page.getByLabel('¿Qué tipo de riego usas?').selectOption('riego_apoyo');
+  await page.locator('.fv-details-summary').click();
+  await page.getByLabel('Mes de inicio previsto (1–12)').selectOption('5');
   await page.getByRole('button', { name: 'Guardar y salir' }).click();
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('fieldverse.draft.v1')).finca.riego)).toBe('riego_apoyo');
   await page.getByRole('button', { name: 'Explorar mi finca' }).click();

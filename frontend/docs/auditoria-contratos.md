@@ -72,3 +72,18 @@ correcta (mantiene aviso de chunk >500 kB). git diff --check correcto y
 frontend/.env confirmado como ignorado y no rastreado. La respuesta histórica
 también debe coincidir con el período y coordenadas solicitados; la rejilla
 puede diferir en coordenadas devueltas, tal como permite el contrato.
+
+## Revisión de Explora (2026-11-15)
+
+- Al continuar desde Tu finca, Explora solicita el historial con coordenadas
+  guardadas y VITE_HISTORY_START/END; el período de respuesta debe coincidir.
+- Los estados de clima y pronóstico solo se muestran si su fingerprint coincide
+  con el perfil vigente. El cambio de ubicación oculta datos anteriores de
+  inmediato, cancela solicitudes en curso y descarta sus respuestas tardías.
+- El historial se titula 2015–2024 y declara que no es tiempo actual ni pronóstico;
+  presenta ubicación, período, fuentes, enlaces seguros, procedencia y cobertura
+  disponibles por variable.
+- Mes de inicio empieza sin selección y sigue siendo obligatorio para continuar.
+  Suelo y drenaje parten de `desconocido` según el vocabulario del catálogo.
+- E2E con historia simulada válida y carrera de respuesta tardía: cubierta en
+  escritorio y móvil. No demuestra disponibilidad o valores del proveedor real.

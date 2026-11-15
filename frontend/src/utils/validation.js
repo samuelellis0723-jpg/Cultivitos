@@ -13,7 +13,7 @@ export function createEmptyFinca(catalog) {
     drenaje: firstOrUnknown(catalog?.opcionesFinca?.drenaje),
     riego: firstOrUnknown(catalog?.opcionesFinca?.riego),
     cultivosAnteriores: [],
-    mesInicio: 5,
+    mesInicio: '',
     prioridad: catalog?.opcionesFinca?.prioridad?.[0]?.valor ?? 'equilibrio',
   };
 }

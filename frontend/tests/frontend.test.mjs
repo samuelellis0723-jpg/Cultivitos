@@ -22,6 +22,8 @@ test('validateFinca rechaza coordenadas vacías sin convertir "" a 0', () => {
   assert.equal(res.valid, false);
   assert.ok(res.errors.latitude);
   assert.ok(res.errors.longitude);
+  assert.equal(draft.mesInicio, '');
+  assert.ok(res.errors.mesInicio);
 });
 
 test('validateFinca rechaza coordenadas fuera de rango y mes inválido', () => {
