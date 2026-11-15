@@ -1,6 +1,6 @@
 # Auditoría D7: cálculo de puntuaciones
 
-**Estado:** D7 no está implementado como cálculo agronómico integrado. Esta auditoría describe módulos locales inspeccionados y los requisitos pendientes; no afirma que se hayan ejecutado sus pruebas en esta revisión.
+**Estado:** existe un mecanismo experimental en `backend/src/domain/simulation/puntuacion-d7.js`, habilitado solo para `prueba_sintetica`. D7 no está implementado ni aprobado como cálculo agronómico y el modo real está deshabilitado. Las pruebas nuevas se describen abajo; los conteos de ejecución se reportan fuera de esta auditoría.
 
 ## Qué existe hoy
 
@@ -19,13 +19,15 @@ Minimax **no** construye escenarios, consulta ni interpreta clima, calcula una p
 - `backend/src/domain/simulation/elegibilidad.js`, `evaluarElegibilidad()` y `evaluarElegibilidadEstrategia()`: valida datos de finca/catálogo y determina elegibilidad/motivos bajo las reglas codificadas. No calcula puntos climáticos.
 - `backend/src/domain/simulation/compatibilidad-temporal.js`, `evaluarCompatibilidadTemporal()`: calcula estados de compatibilidad temporal a partir de ventanas y duraciones. No calcula impacto de clima ni D7.
 
-Las pruebas correspondientes (`validar-catalogo.test.js`, `validar-clima.test.js`, `elegibilidad.test.js` y `compatibilidad-temporal.test.js`) describen validaciones de esos módulos. Su existencia no demuestra que haya un flujo integrado que los ejecute juntos, y no se ejecutaron como parte de esta revisión documental.
+`backend/src/domain/simulation/puntuacion-d7.js`, `calcularPuntuacionesD7()`, añade validación y puntuación configurable para fixtures sintéticos: exige explícitamente los tres escenarios, indicador/rango/unidad/fuente, pesos para las tres prioridades y suma de pesos por prioridad; deja `null` con motivo si falta cualquier indicador requerido; y no exige observaciones de estrategias descartadas. La resolución de `fuenteIds` comprueba únicamente que el identificador esté declarado en la evidencia sintética. **No comprueba calidad, pertinencia o validez científica de la fuente.** Rechaza `modo: "real"` con `MODO_NO_HABILITADO_D7`; no ofrece una ruta de demo.
+
+Las pruebas correspondientes (`validar-catalogo.test.js`, `validar-clima.test.js`, `elegibilidad.test.js`, `compatibilidad-temporal.test.js` y `puntuacion-d7.test.js`) cubren módulos por separado. Su existencia no demuestra que haya un flujo integrado que los ejecute juntos.
 
 ## Lo que falta integrar
 
-No se encontró en los módulos de dominio inspeccionados una función D7 que transforme indicadores por estrategia/escenario y prioridad en puntuaciones. Tampoco hay un orquestador documentado que tome `{finca, clima, catalogo}`, valide sus dependencias, calcule todas las puntuaciones y las entregue a `calcularMinimaxRegret`. El README y `docs/contrato-api.md` siguen clasificando catálogo, clima y simulación como pendientes o contratos propuestos; el único endpoint declarado implementado es health.
+El mecanismo experimental calcula a partir de indicadores por estrategia/escenario ya suministrados, pero no construye esos indicadores a partir de `{finca, clima, catalogo}` ni deriva escenarios D6. Tampoco hay un orquestador documentado que valide esas dependencias, seleccione datos reales y lleve un resultado a `POST /api/simulations`. El README y `docs/contrato-api.md` siguen clasificando catálogo, clima y simulación como pendientes o contratos propuestos; el único endpoint declarado implementado es health.
 
-La integración futura debe ordenar explícitamente: validar entrada; validar clima/catálogo; resolver elegibilidad y compatibilidad; construir o recibir escenarios según D6; puntuar solo estrategias elegibles con datos completos; y pasar esas puntuaciones a Minimax. La forma pública y los campos nuevos requieren acuerdo de integración conforme a `docs/contrato-api.md` y D10 de `contratos-dominio.md`.
+La integración futura debe ordenar explícitamente: validar entrada; validar clima/catálogo; resolver elegibilidad y compatibilidad; construir o recibir escenarios según D6; producir los indicadores con reglas aprobadas; puntuar solo estrategias elegibles con datos completos; y pasar esas puntuaciones a Minimax. El módulo actual recibe solo modo sintético. La forma pública y los campos nuevos requieren acuerdo de integración conforme a `docs/contrato-api.md` y D10 de `contratos-dominio.md`.
 
 ## Insumos pendientes de D7
 
@@ -43,25 +45,22 @@ Antes de asignar puntuaciones reales se necesitan, como mínimo:
 
 ## Implementable como mecanismo frente a lo bloqueado
 
-Se puede desarrollar y probar, con datos sintéticos claramente aislados, el mecanismo de entrada/salida, validaciones de tipos/rangos/completitud, normalización configurable, combinación explícita, motivos de `null`, trazabilidad, inmutabilidad y adaptación a Minimax. Una fórmula o esquema matemático no ratificado debe etiquetarse **PROPUESTA DE INGENIERÍA PENDIENTE**, y los parámetros de sus pruebas deben etiquetarse **SOLO PARA PRUEBAS; SIN VALIDEZ AGRONÓMICA**.
+El mecanismo de entrada/salida, validaciones de tipos/rangos/completitud, normalización configurable, combinación explícita, motivos de `null`, trazabilidad referencial, inmutabilidad y composición con Minimax están implementados para datos sintéticos. La normalización lineal y la media ponderada son una **PROPUESTA DE INGENIERÍA PENDIENTE**, no reglas ratificadas. Los fixtures se etiquetan **SOLO PARA PRUEBAS; SIN VALIDEZ AGRONÓMICA**. La puntuación real sigue bloqueada hasta contar con las decisiones agronómicas y de integración enumeradas arriba; el código no infiere ni valida científicamente esos elementos.
 
 La puntuación real queda bloqueada hasta contar con indicadores, parámetros y fuentes justificadas, pesos por prioridad aprobados, escenarios D6 definidos, reglas para faltantes y decisiones de integración ratificadas. No sustituir esos datos con valores predeterminados, ejemplos del contrato ni fixtures del validador.
 
 ## Criterios verificables para aceptar una futura implementación D7
 
-1. Con configuración completa y sintética, la función produce valores reproducibles por estrategia y por cada uno de los tres escenarios; la aritmética está comprobada en pruebas.
-2. Tres casos distinguen las prioridades `equilibrio`, `agua` y `suelo` mediante la configuración recibida, sin pesos ocultos.
-3. Falta un indicador requerido ⇒ puntuación de esa estrategia/escenario `null` con motivo estable; no se reescalan los pesos restantes. Minimax no declara ganadora si la matriz elegible queda incompleta.
-4. Tipos incorrectos, rangos invertidos, pesos inválidos/no normalizados, unidades incompatibles, parámetros ausentes o referencias de fuente desconocidas se rechazan como entrada/configuración inválida, no se interpretan como cero.
-5. Una estrategia descartada mantiene su motivo y no entra al cálculo; esto se distingue de una estrategia elegible sin datos suficientes.
-6. Se verifica inmutabilidad y determinismo con pruebas.
-7. La evidencia de salida identifica modo, escenario, versiones de reglas/catálogo, valores/unidades usados y fuentes; modo demo/prueba no puede presentarse como resultado real.
-8. Hay pruebas de frontera para 0 y 100, todos los escenarios y cada prioridad, además de faltantes e insumos inválidos.
-9. La integración conserva el contrato de la API: Minimax usa `puntuaciones` internamente; la propuesta pública de `docs/contrato-api.md` nombra el mapa `puntajes`. El adaptador debe mapearlo explícitamente, sin alterar unilateralmente el contrato.
+1. Para aceptación del mecanismo experimental: puntuaciones exactas de fixture para tres prioridades/escenarios; otro rango; dirección menor_mejor y extremos; faltantes; descartes; validaciones; inmutabilidad y determinismo; rechazo de modo real.
+2. Para composición: prioridad agua entrega a Minimax arrepentimientos A=30, B=10 y ganadora B; matriz incompleta produce `incompleto` y ninguna ganadora.
+3. Para integración real futura: definir/citar indicadores y parámetros, ratificar normalización y pesos, escenario D6, completitud y manejo de fuentes; habilitar el modo real solo tras esas decisiones.
+4. Acordar la orquestación HTTP y mapear `puntuaciones` internas a `puntajes` de la API sin cambiar el contrato unilateralmente.
 
 ## Referencias
 
 - `backend/src/domain/simulation/minimax-regret.js`: `calcularMinimaxRegret()` y validación de la matriz recibida.
+- `backend/src/domain/simulation/puntuacion-d7.js`: `calcularPuntuacionesD7()` experimental, con modo real deshabilitado.
+- `backend/src/domain/simulation/puntuacion-d7.test.js`: fixtures de puntuación y composición con Minimax.
 - `backend/src/domain/catalog/validar-catalogo.js`: `validarCatalogo()` y `validarParametrosPuntuacion()`.
 - `backend/src/domain/simulation/validar-clima.js`: `validarClima()` y validación de cobertura.
 - `backend/src/domain/simulation/elegibilidad.js`: `evaluarElegibilidad()` y `evaluarElegibilidadEstrategia()`.

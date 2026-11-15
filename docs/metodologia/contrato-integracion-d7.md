@@ -1,6 +1,6 @@
 # Propuesta de integración D7: puntuaciones por escenario
 
-> **PROPUESTA PENDIENTE DE INTEGRACIÓN Y RATIFICACIÓN. D7 no está implementado como cálculo agronómico.** Este documento propone una frontera técnica para discutir entre dominio y backend. No aprueba indicadores, fuentes, pesos ni validez científica, y no modifica el contrato público de la API.
+> **MECANISMO EXPERIMENTAL IMPLEMENTADO; PROPUESTA PENDIENTE DE INTEGRACIÓN Y RATIFICACIÓN.** `puntuacion-d7.js` solo permite `prueba_sintetica`. El modo real y el uso como cálculo agronómico siguen deshabilitados/no aprobados. Este documento no aprueba indicadores, fuentes, pesos ni validez científica, y no modifica el contrato público de la API.
 
 ## 1. Responsabilidades y límites
 
@@ -12,7 +12,7 @@ La construcción de escenarios D6 y la puntuación D7 son etapas distintas. D7 r
 
 ## 2. Interfaz de dominio propuesta
 
-Nombre ilustrativo del módulo (archivo aún inexistente): `backend/src/domain/simulation/calcular-puntuaciones.js`.
+Módulo: `backend/src/domain/simulation/puntuacion-d7.js`.
 
 ```js
 calcularPuntuacionesD7({
@@ -25,9 +25,11 @@ calcularPuntuacionesD7({
 })
 ```
 
-Es una propuesta de API interna; nombres y campos requieren revisión. La función devuelve una puntuación para cada estrategia y escenario, o `null` con motivo. La validación de entrada/configuración inválida debe lanzar un error de dominio identificable; una estrategia descartada y una puntuación no calculable son resultados distintos y no errores de esquema.
+Es una interfaz interna experimental. La función devuelve una puntuación para cada estrategia y escenario, o `null` con motivo. `modo: "real"` lanza `ErrorPuntuacionD7` con código `MODO_NO_HABILITADO_D7`; `demo` pertenece al ejemplo de Minimax y no se procesa aquí. La validación de entrada/configuración inválida lanza un error de dominio identificable; una estrategia descartada y una puntuación no calculable son resultados distintos y no errores de esquema. Solo se acepta el conjunto completo de escenarios `habitual`, `seco` y `humedo`.
 
 ### Entrada propuesta
+
+El siguiente esquema `modo: "real"` describe la forma futura de entrada; no es ejecutable en esta versión porque el módulo rechaza ese modo. La entrada sintética ejecutable está completa en §4.
 
 ```json
 {
@@ -77,7 +79,7 @@ Es una propuesta de API interna; nombres y campos requieren revisión. La funci�
 }
 ```
 
-Esquema intencionalmente explícito: una implementación debe rechazar pesos/normalizaciones faltantes, unidad discordante, límites inválidos, referencias de fuentes inexistentes, prioridad/escenario desconocido, duplicados y valores no numéricos/no finitos. No se completan parámetros con defaults. El objeto real de evidencia debe tener metadatos de fuentes suficientes para reconstruir el dato (proveedor, URL de consulta sin secretos, coordenadas solicitadas/devueltas, período, unidades, fecha de consulta, cobertura y origen `live`/`backup`) como requiere `docs/contrato-api.md`.
+Esquema intencionalmente explícito: el módulo rechaza pesos/normalizaciones faltantes, unidad discordante, límites inválidos, referencias de fuentes inexistentes, prioridad/escenario desconocido, duplicados y valores no numéricos/no finitos. No completa parámetros con defaults. En esta versión **todos los indicadores declarados son requeridos, aunque su peso para la prioridad elegida sea cero**. Para `prueba_sintetica`, las fuentes deben declararse `tipo: "sintetica"`. La comprobación de que un `fuenteId` existe solo verifica resolución referencial; **no comprueba calidad, pertinencia ni validez científica**. En un futuro modo real, el orquestador tendría que aportar metadatos suficientes para reconstruir datos climáticos (proveedor, URL de consulta sin secretos, coordenadas, período, unidades, fecha de consulta, cobertura y origen `live`/`backup`) como requiere `docs/contrato-api.md`.
 
 Los campos `min`, `max`, `direccion` y pesos expresan un mecanismo de normalización/combinación propuesto, no parámetros agronómicos aprobados. Sus valores, definiciones, fuentes y reglas finales siguen pendientes en D7. Además, queda por acordar qué función pura transforma los datos originales de clima/catálogo en cada indicador y valor de `valoresPorEscenario`; no se debe fingir que esos indicadores ya existen en el sistema.
 
@@ -100,18 +102,16 @@ Los campos `min`, `max`, `direccion` y pesos expresan un mecanismo de normalizac
   ],
   "evidencia": {
     "catalogoVersion": "versión del catálogo",
-    "fuenteIds": ["fuente-documentada"],
-    "supuestos": [],
-    "datosFaltantes": ["estrategia-1.seco.identificador-de-indicador"]
+    "fuenteIds": ["fuente-documentada"]
   }
 }
 ```
 
-Para `elegible: false`, se conservan los motivos de descarte y la estrategia no recibe valores que puedan participar como puntuaciones en Minimax. Para `elegible: true` con indicador faltante, solo los escenarios afectados devuelven `null` con motivo; no se redistribuyen pesos. Si Minimax recibe una matriz elegible incompleta, su contrato actual devuelve `incompleto` y `ganadoras: []`.
+Para `elegible: false`, se conservan los motivos de descarte y la estrategia no recibe valores que puedan participar como puntuaciones en Minimax; no se exigen observaciones. Para `elegible: true` con indicador ausente o `null`, solo los escenarios afectados devuelven `null` con motivo; los restantes se calculan y no se redistribuyen pesos. La ausencia de un valor es faltante; un valor presente con tipo no numérico, `NaN`/infinito o fuera del rango es inválido. Si Minimax recibe una matriz elegible incompleta, su contrato actual devuelve `incompleto` y `ganadoras: []`.
 
 ## 3. Propuesta de cálculo de ingeniería (no agronómica)
 
-Para hacer comprobable el mecanismo, se propone probar —pendiente de ratificación— normalización lineal acotada y combinación por media ponderada:
+El mecanismo experimental implementa normalización lineal acotada y combinación por media ponderada, exclusivamente como propuesta de ingeniería pendiente de ratificación:
 
 ```text
 normalizado(x, min, max, mayor_mejor) = 100 * (x - min) / (max - min)
@@ -119,9 +119,9 @@ normalizado(x, min, max, menor_mejor) = 100 * (max - x) / (max - min)
 puntuacion = suma(peso[indicador] * normalizado[indicador])
 ```
 
-La función exigiría `min < max`, valor dentro de `[min, max]`, pesos finitos no negativos y suma de pesos igual a 1 dentro de una tolerancia numérica documentada en la implementación. No se recortan valores externos al rango ni se renormalizan pesos ante faltantes. Si un indicador requerido está ausente, la puntuación de ese escenario es `null` con motivo. La orientación favorable, límites, forma funcional, tolerancia y suma requerida son decisiones de diseño pendientes; elegir esta fórmula no constituye validación agronómica.
+La función exige `min < max`, límites y valores finitos, valor dentro del rango, pesos finitos no negativos y pesos explícitos para las tres prioridades. Para cada prioridad, la suma **entre todos los indicadores** debe ser 1 con `TOLERANCIA_SUMA_PESOS_D7 = 1e-12`, tolerancia exclusivamente numérica para coma flotante. No se recortan valores fuera del rango ni se renormalizan pesos ante faltantes. Si falta cualquier indicador declarado (también con peso cero), la puntuación de ese escenario es `null` con motivo. Una desviación del resultado fuera de `[0, 100]` solo se ajusta al extremo si su magnitud no supera `TOLERANCIA_REDONDEO_D7 = 2e-10`; desviaciones mayores generan error. Ambas tolerancias son técnicas, no agronómicas. La orientación favorable, límites, forma funcional y pesos siguen pendientes; esta fórmula no constituye validación agronómica.
 
-La configuración debe contener conjuntos de pesos explícitos para las tres prioridades: `equilibrio`, `agua` y `suelo`. La prioridad selecciona el conjunto aprobado; no altera la probabilidad de escenarios. La escala `0–100` y dirección «mayor es mejor» constan como decisiones acordadas en `contratos-dominio.md` §0.3; el método que genera esa escala no está acordado.
+La configuración debe contener conjuntos de pesos explícitos para las tres prioridades: `equilibrio`, `agua` y `suelo`. La prioridad selecciona el conjunto recibido; no altera la probabilidad de escenarios. La escala `0–100` y dirección «mayor es mejor» constan como decisiones acordadas en `contratos-dominio.md` §0.3; el método que genera esa escala no está acordado.
 
 ## 4. Ejemplo numérico completo, sintético
 
@@ -204,7 +204,7 @@ Ejemplo de forma de salida para la llamada `prioridad: "agua"`:
     {"estrategiaId":"A","elegible":true,"puntuaciones":{"habitual":76,"seco":44,"humedo":68},"motivosNoCalculable":{},"motivosDescarte":[]},
     {"estrategiaId":"B","elegible":true,"puntuaciones":{"habitual":66,"seco":74,"humedo":82},"motivosNoCalculable":{},"motivosDescarte":[]}
   ],
-  "evidencia":{"catalogoVersion":"fixture-sintetico-1","fuenteIds":["fixture-sintetico"],"supuestos":["SOLO PARA PRUEBAS; SIN VALIDEZ AGRONÓMICA"],"datosFaltantes":[]}
+  "evidencia":{"catalogoVersion":"fixture-sintetico-1","fuenteIds":["fixture-sintetico"]}
 }
 ```
 
@@ -232,24 +232,24 @@ La estrategia A sigue elegible, pero la matriz de puntuaciones de estrategias el
 
 ## 6. Separación de modo real, sintético y demo
 
-- **`real`:** solo entradas con procedencia trazable y reglas aprobadas/versionadas. La salida debe conservar fuentes, fechas, cobertura y supuestos. Nunca se etiqueta real por el mero hecho de tener números.
-- **`prueba_sintetica`:** fixtures explícitos para pruebas del cálculo, con etiquetas que impidan confundirlos con datos observados. No producen salidas públicas de recomendación.
+- **`real`:** no está habilitado en esta versión. Se rechaza con `MODO_NO_HABILITADO_D7` hasta que se ratifiquen D6/D7 y exista integración trazable. No se presenta esa limitación como falta de datos climáticos.
+- **`prueba_sintetica`:** único modo aceptado por el módulo. Usa fixtures explícitos para probar el cálculo, con etiquetas que impidan confundirlos con datos observados. No produce por sí solo una salida pública de recomendación.
 - **`demo`:** el ejemplo existente de `docs/contrato-api.md` puede verificar Minimax con la matriz ficticia. Es un flujo separado; no se alimenta de clima o puntuaciones reales ni se presenta como D7.
 
-La futura implementación debe rechazar mezclar fuentes sintéticas con `modo: "real"`. El modo debe viajar hasta la evidencia/salida para impedir que el adaptador HTTP o la interfaz eliminen la etiqueta.
+El módulo exige fuentes `tipo: "sintetica"` en su modo habilitado y conserva el modo en la salida. El demo de Minimax sigue separado. Un futuro adaptador HTTP no debe quitar la etiqueta ni permitir que datos sintéticos aparezcan como reales.
 
 ## 7. Pruebas requeridas para la futura implementación
 
-1. Una entrada completa como la sección 4 produce la tabla exacta de puntuaciones y el resultado es determinista.
-2. Ejecutar casos con cada prioridad (`equilibrio`, `agua`, `suelo`) y cada escenario (`habitual`, `seco`, `humedo`); verificar aplicación del peso seleccionado y ningún escenario omitido.
-3. Faltante requerido produce `null` y motivo por escenario; los pesos no cambian y Minimax devuelve incompleto sin ganador.
-4. Estrategia no elegible conserva los motivos y no participa; distinguirla de faltantes en estrategia elegible.
-5. Rechazar prioridad/escenario desconocido, ids duplicados, unidad incompatible, `NaN`/`Infinity`, rangos iguales/invertidos, valor fuera del rango, peso negativo, peso ausente o suma distinta de la regla acordada, y referencia de fuente no resuelta.
-6. Probar límites de normalización y direcciones `mayor_mejor`/`menor_mejor` una vez aprobados los parámetros.
-7. Congelar entrada y verificar que el módulo no la modifica; repetir llamada para confirmar determinismo.
-8. Rechazar fixture sintético etiquetado como `real`; permitir su uso solo en pruebas/mode explícito.
-9. Probar que la traducción dominio `puntuaciones` → API `puntajes` conserva valores, `null` y motivos sin inventar campos acordados.
-10. Los pesos, límites y unidades de fixtures se mantienen rotulados **SOLO PARA PRUEBAS; SIN VALIDEZ AGRONÓMICA**. Las pruebas de integración real solo se habilitan al ratificar D6/D7 y las fuentes.
+1. Con entrada sintética completa, obtener exactamente las puntuaciones de la sección 4 para las tres prioridades y los tres escenarios.
+2. Verificar rango distinto de `[0, 100]`, dirección `menor_mejor` y ambos extremos.
+3. Verificar faltantes por escenario, sin redistribuir pesos, incluso si el peso del indicador es cero; Minimax devuelve incompleto y ninguna ganadora.
+4. Verificar descartes sin pedir observaciones, con motivos conservados.
+5. Rechazar entradas/configuración inválidas, pesos no válidos para cualquiera de las prioridades, unidades incompatibles, fuentes no resueltas y duplicados.
+6. Verificar inmutabilidad, determinismo y que `real`/`demo` no se aceptan.
+7. Integrar por composición con el Minimax existente: con prioridad `agua`, arrepentimientos A=30 y B=10, ganadora B; con matriz incompleta, estado incompleto y ganadoras vacías.
+8. Antes de una integración HTTP real, acordar mapeo `puntuaciones` → `puntajes` y metadatos de procedencia sin ampliar unilateralmente la API.
+
+Estas pruebas verifican solo el mecanismo técnico. Los fixtures siguen rotulados **SOLO PARA PRUEBAS; SIN VALIDEZ AGRONÓMICA**; no se habilita modo real al aprobarlas.
 
 ## 8. Decisiones pendientes
 
@@ -257,6 +257,8 @@ La integración queda bloqueada para puntuaciones agronómicas reales hasta que 
 
 ## Referencias locales
 
+- `backend/src/domain/simulation/puntuacion-d7.js`: `calcularPuntuacionesD7()` implementa el mecanismo experimental, solo modo sintético.
+- `backend/src/domain/simulation/puntuacion-d7.test.js`: pruebas de mecanismo y composición con Minimax.
 - `backend/src/domain/simulation/minimax-regret.js`: `calcularMinimaxRegret()` consume `puntuaciones` ya calculadas.
 - `backend/src/domain/catalog/validar-catalogo.js`: validación estructural de parámetros `valor`/`unidad`/`fuenteId`; no normaliza ni pondera.
 - `backend/src/domain/simulation/validar-clima.js`: validación estructural/climática; no genera escenarios D6.
