@@ -1,3 +1,4 @@
+import DataOriginBadge from '../components/feedback/DataOriginBadge.jsx';
 import WaterChoice from '../components/form/WaterChoice.jsx';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -66,13 +67,7 @@ export default function MiFincaPage() {
   };
 
   const handleLoadPilotCoords = () => {
-    const pilot = catalog?.localidadPiloto;
-    setFincaDraft((prev) => ({
-      ...prev,
-      localidad: pilot?.nombre || 'Coordenadas ilustrativas (contrato)',
-      latitude: String(pilot?.latitude ?? 9.93),
-      longitude: String(pilot?.longitude ?? -84.09),
-    }));
+    setFincaDraft((prev) => ({ ...prev, localidad: 'Liberia, Guanacaste · punto ilustrativo propuesto', latitude: '10.63', longitude: '-85.44' }));
     setErrors((prev) => {
       const next = { ...prev };
       delete next.latitude;
@@ -118,6 +113,7 @@ export default function MiFincaPage() {
               <p>Puedes ubicar tu parcela y guardar lo que llevas. Intenta de nuevo para elegir el agua y tus prioridades.</p>
               <div className="fv-row-wrap"><button type="button" className="fv-btn fv-btn-secondary fv-btn-sm" onClick={reloadCatalog}>Intentar de nuevo</button><button type="button" className="fv-btn fv-btn-secondary fv-btn-sm" onClick={() => switchDataMode('demo')}>Activar modo demostración</button></div>
             </div>}
+            <div className="fv-row-wrap" style={{ fontSize: '11px', marginBottom: '16px' }}><span>{dataMode === 'demo' ? 'Modo demostración' : 'Conexión API'}</span><DataOriginBadge origin={catalog?.origen} /></div>
             {dataMode === 'demo' && <p className="farm-demo-note">Demostración · opciones y resultados ficticios.</p>}
             {draftNotice && <div className="farm-notice" role="status">{draftNotice.text}</div>}
             <section className="farm-question">
@@ -134,7 +130,7 @@ export default function MiFincaPage() {
                   <FieldError id={`${key}-error`} message={errors[key]} />
                 </div>)}
               </div>
-              {dataMode === 'demo' && <button className="farm-text-button" type="button" onClick={handleLoadPilotCoords}>Usar ubicación ilustrativa de demostración</button>}
+              <button className="farm-text-button" type="button" onClick={handleLoadPilotCoords}>Cargar Liberia · punto ilustrativo, no finca validada</button>
             </section>
             <fieldset className="farm-dependent" disabled={!ready}>
               <legend className="sr-only">Opciones de tu finca</legend>

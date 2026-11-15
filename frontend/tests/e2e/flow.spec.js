@@ -54,8 +54,11 @@ test('teclado y modal móvil', async ({ page }, info) => {
 
 test('Explora mueve foco con flechas y no consulta período oculto', async ({ page }) => {
   await setup(page, DEMO_SIMULATION_CASES.default);
+  const request = page.waitForRequest(req => req.url().includes('/api/climate/history?'));
   await page.goto('/explora');
-  await expect(page.getByText('Historial pendiente:', { exact: false })).toBeVisible();
+  const url = new URL((await request).url());
+  expect(url.searchParams.get('start')).toBe('20150101');
+  expect(url.searchParams.get('end')).toBe('20241231');
   const tab = page.getByRole('tab', { name: 'Habitual', exact: true });
   await tab.focus(); await tab.press('End');
   await expect(page.getByRole('tab', { name: 'Más lluvioso' })).toBeFocused();

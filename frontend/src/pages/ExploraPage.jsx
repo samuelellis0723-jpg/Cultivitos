@@ -58,7 +58,7 @@ export default function ExploraPage() {
       <div className="fv-page-context">
         <div className="fv-context-left">
           <span className="fv-badge fv-badge-step">Paso 2 de 3 · Explora</span>
-          <DataOriginBadge origin={dataMode === 'demo' ? 'demo' : 'live'} />
+          <DataOriginBadge origin={climateHistoryState.data?.origen} />
           <span className="fv-row-wrap fv-hint" style={{ gap: '6px' }}>
             <Icon name="pin" size={16} />
             <span>

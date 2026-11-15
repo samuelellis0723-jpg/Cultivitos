@@ -1,3 +1,6 @@
+import { validateClimate } from './climateValidation.js';
+import { validIsoDate } from '../utils/dates.js';
+import { metadataOrigin } from './provenance.js';
 import { ApiError } from './api.js';
 
 export function adaptCatalog(raw) {
@@ -8,6 +11,8 @@ export function adaptCatalog(raw) {
   }
 
   const fail = () => { throw new ApiError('Referencias u opciones inválidas en catálogo.', { code: 'INVALID_CATALOG' }); };
+  if (raw.generado != null && !validIsoDate(raw.generado)) fail();
+  if (Array.isArray(raw.fuentes) && raw.fuentes.some(f => f.fecha != null && !validIsoDate(f.fecha))) fail();
   const unique = (items) => new Set(items.map(x => x.id)).size === items.length && items.every(x => typeof x.id === 'string' && x.id);
   if (!unique(raw.cultivos) || !unique(raw.estrategias)) fail();
   for (const crop of raw.cultivos) {
@@ -24,6 +29,7 @@ export function adaptCatalog(raw) {
   }
   return {
     version: String(raw.version),
+    origen: metadataOrigin(raw),
     generado: raw.generado ?? null,
     localidadPiloto: raw.localidadPiloto ?? null,
     fuentes: Array.isArray(raw.fuentes) ? raw.fuentes : [],
@@ -39,17 +45,7 @@ export function adaptCatalog(raw) {
 }
 
 export function adaptClimateHistory(raw) {
-  if (!raw || typeof raw !== 'object' || !raw.variables?.precipitacion || !raw.variables?.temperaturaMedia) {
-    throw new ApiError('Los datos climáticos históricos no tienen la estructura esperada.', {
-      code: 'INVALID_CLIMATE_HISTORY',
-    });
-  }
-
-  for (const variable of Object.values(raw.variables)) {
-    if (!variable || !Array.isArray(variable.serie) || variable.serie.some(p => !p || typeof p.fecha !== 'string' || (p.valor !== null && !Number.isFinite(p.valor))) || new Set(variable.serie.map(p => p.fecha)).size !== variable.serie.length) {
-      throw new ApiError('Serie climática inválida.', { code: 'INVALID_CLIMATE_HISTORY' });
-    }
-  }
+  const origin = validateClimate(raw);
   const precipSerie = Array.isArray(raw.variables?.precipitacion?.serie)
     ? raw.variables.precipitacion.serie
     : [];
@@ -60,14 +56,14 @@ export function adaptClimateHistory(raw) {
   const byDate = new Map();
   for (const item of precipSerie) {
     byDate.set(item.fecha, {
-      fecha: item.fecha,
+      fecha: `${item.fecha.slice(0,4)}-${item.fecha.slice(4,6)}-${item.fecha.slice(6,8)}`,
       precipitacion: item.valor === undefined ? null : item.valor,
       temperaturaMedia: null,
     });
   }
   for (const item of tempSerie) {
     const existing = byDate.get(item.fecha) ?? {
-      fecha: item.fecha,
+      fecha: `${item.fecha.slice(0,4)}-${item.fecha.slice(4,6)}-${item.fecha.slice(6,8)}`,
       precipitacion: null,
       temperaturaMedia: null,
     };
@@ -83,7 +79,7 @@ export function adaptClimateHistory(raw) {
     coordenadas: raw.coordenadas ?? null,
     periodo: raw.periodo ?? null,
     resolucion: raw.resolucion ?? 'diaria',
-    origen: raw.origen ?? null,
+    origen: origin,
     antiguedadHoras: raw.antiguedadHoras ?? null,
     fuentes: Array.isArray(raw.fuentes) ? raw.fuentes : [],
     variables: raw.variables,
@@ -92,7 +88,7 @@ export function adaptClimateHistory(raw) {
 }
 
 export function adaptClimateForecast(raw) {
-  if (!raw || typeof raw !== 'object' || !Array.isArray(raw.dias) || raw.dias.some(d => !d || typeof d.fecha !== 'string')) {
+  if (!raw || typeof raw !== 'object' || !Array.isArray(raw.dias) || raw.dias.some(d => !d || !validIsoDate(d.fecha) || !['precipitacionMm','tempMediaC'].every(k => d[k] === null || Number.isFinite(d[k]))) || (raw.fechaEmision != null && !validIsoDate(raw.fechaEmision)) || new Set(raw.dias.map(d => d.fecha)).size !== raw.dias.length) {
     throw new ApiError('El pronóstico recibido no tiene el formato esperado.', {
       code: 'INVALID_FORECAST',
     });
@@ -114,7 +110,7 @@ export function adaptSimulationResponse(raw) {
 
   const fail = () => { throw new ApiError('Contrato de simulación incoherente.', { code: 'INVALID_SIMULATION' }); };
   const escenarios = raw.escenarios;
-  if (raw.evidencia?.origen != null && !['live','backup','demo'].includes(raw.evidencia.origen)) fail();
+  if (raw.evidencia?.origen != null && !['live','backup','demo','mixed'].includes(raw.evidencia.origen)) fail();
   if (raw.estado === 'demo' && raw.evidencia?.origen !== 'demo') fail();
   if (!['completo','incompleto','sin_opciones','demo'].includes(raw.estado) || !Array.isArray(escenarios) || escenarios.length !== 3 || new Set(escenarios).size !== 3 || escenarios.some(s => !['habitual','seco','humedo'].includes(s)) || !Array.isArray(raw.ganadoras) || !raw.evidencia) fail();
   const ids = new Set();
@@ -126,9 +122,11 @@ export function adaptSimulationResponse(raw) {
       if (v !== null && (!Number.isFinite(v) || v < 0 || v > 100)) fail();
       if (v === null && !r.motivosNoCalculable?.[s] && r.elegible) fail();
     }
+    if (!r.elegible && (!Array.isArray(r.motivosDescarte) || !r.motivosDescarte.length || r.motivosDescarte.some(reason => typeof reason !== 'string' || !reason.trim()))) fail();
     if (r.peorArrepentimiento === null && r.elegible && !r.motivoPeorArrepentimiento) fail();
     if (r.peorArrepentimiento !== null && (!Number.isFinite(r.peorArrepentimiento) || r.peorArrepentimiento < 0 || r.peorArrepentimiento > 100)) fail();
   }
+  if (raw.descartes !== undefined && (!Array.isArray(raw.descartes) || raw.descartes.some(d => !d || !raw.resultados.some(r => r.estrategiaId === d.estrategiaId && !r.elegible) || !Array.isArray(d.motivos) || !d.motivos.length || d.motivos.some(m => typeof m !== 'string' || !m.trim())))) fail();
   if (new Set(raw.ganadoras).size !== raw.ganadoras.length || raw.ganadoras.some(id => !raw.resultados.some(r => r.estrategiaId === id && r.elegible))) fail();
   if (['incompleto','sin_opciones'].includes(raw.estado) && raw.ganadoras.length) fail();
   if (raw.estado === 'sin_opciones' && raw.resultados.some(r => r.elegible)) fail();
@@ -161,7 +159,7 @@ export function adaptSimulationResponse(raw) {
     explicacion: raw.explicacion ?? '',
     evidencia: {
       ...raw.evidencia,
-      origen: raw.evidencia?.origen ?? null,
+      origen: metadataOrigin(raw.evidencia),
       fuentes: Array.isArray(raw.evidencia?.fuentes) ? raw.evidencia.fuentes : [],
       supuestos: Array.isArray(raw.evidencia?.supuestos) ? raw.evidencia.supuestos : [],
       datosFaltantes: Array.isArray(raw.evidencia?.datosFaltantes) ? raw.evidencia.datosFaltantes : [],

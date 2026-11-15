@@ -60,7 +60,7 @@ export default function ComparaPage() {
       <h2>Comparaciones guardadas</h2>
       {savedList.map(item => (
         <div key={item.id} className="fv-row-wrap">
-          <span>{new Date(item.savedAt).toLocaleString('es-CR')} · {item.dataMode}</span>
+          <span>{new Date(item.savedAt).toLocaleString('es-CR')} · {item.dataMode === 'demo' ? 'Modo demostración' : 'Conexión API'} · <DataOriginBadge origin={item.simulation?.evidencia?.origen} /></span>
           <button type="button" className="fv-btn fv-btn-secondary" onClick={() => setHistorical(item)}>
             Consultar resultado guardado
           </button>
@@ -180,7 +180,7 @@ export default function ComparaPage() {
         <div className="fv-context-left">
           <span className="fv-badge fv-badge-step">Paso 3 de 3 · Síntesis decisional</span>
           <DataOriginBadge
-            origin={sim?.evidencia?.origen || (dataMode === 'demo' ? 'demo' : undefined)}
+            origin={sim?.evidencia?.origen}
           />
           <span className="fv-row-wrap fv-hint" style={{ gap: '6px' }}>
             <Icon name="pin" size={16} />
@@ -339,7 +339,7 @@ export default function ComparaPage() {
                       >
                         <span className="fv-hint" style={{ color: 'var(--fv-text)' }}>
                           {new Date(item.savedAt).toLocaleString('es-CR')} ·{' '}
-                          {item.dataMode === 'demo' ? 'DEMOSTRACIÓN' : 'En vivo'} · Selección:{' '}
+                          {item.dataMode === 'demo' ? 'Modo demostración' : 'Conexión API'} · Selección:{' '}
                           {item.selectedStrategyId || 'ninguna'}
                         </span>
                         <button

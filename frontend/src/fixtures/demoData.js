@@ -1,4 +1,5 @@
 export const DEMO_CATALOG = {
+  origen: 'demo',
   version: 'demo-0.2',
   generado: '2026-11-14',
   localidadPiloto: {
@@ -216,6 +217,27 @@ export const DEMO_CLIMATE_HISTORY = {
     },
   },
 };
+
+// Explicit demo metadata; maximum temperature remains unknown, never inferred.
+DEMO_CLIMATE_HISTORY.variables.temperaturaMaxima = {
+  ...DEMO_CLIMATE_HISTORY.variables.temperaturaMedia,
+  serie: DEMO_CLIMATE_HISTORY.variables.temperaturaMedia.serie.map(item => ({ ...item, valor: null })),
+};
+for (const variable of Object.values(DEMO_CLIMATE_HISTORY.variables)) {
+  variable.unidad = variable === DEMO_CLIMATE_HISTORY.variables.precipitacion ? 'mm' : '°C';
+  variable.fechas = { ...DEMO_CLIMATE_HISTORY.periodo };
+  variable.serie = variable.serie.map(item => ({ ...item, fecha: item.fecha.replaceAll('-', '') }));
+  const missing = variable.serie.filter(item => item.valor === null).map(item => item.fecha);
+  variable.cobertura = { diasEsperados: 14, diasPresentes: 14 - missing.length, porcentaje: (14 - missing.length) / 14 * 100, faltantes: missing };
+}
+Object.assign(DEMO_CLIMATE_HISTORY.fuentes[0], {
+  proveedor: 'Fixture ficticia de interfaz', urlConsulta: null,
+  coordenadasSolicitadas: { ...DEMO_CLIMATE_HISTORY.coordenadas.solicitadas },
+  coordenadasDevueltas: { ...DEMO_CLIMATE_HISTORY.coordenadas.devueltas },
+  periodo: { ...DEMO_CLIMATE_HISTORY.periodo },
+  unidades: { precipitacion: 'mm', temperaturaMedia: '°C', temperaturaMaxima: '°C' },
+  fechaConsulta: '2026-11-14T12:00:00Z', cobertura: { porcentaje: 0 }, origen: 'demo',
+});
 
 export const DEMO_FORECAST = {
   origen: 'demo',

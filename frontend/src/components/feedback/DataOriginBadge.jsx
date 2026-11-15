@@ -1,4 +1,5 @@
 export default function DataOriginBadge({ origin, antiguedadHoras }) {
+  if (origin === 'mixed') return <span className="fv-badge fv-badge-backup">Procedencia mixta</span>;
   if (origin === 'demo') {
     return <span className="fv-badge fv-badge-demo">Demostración</span>;
   }
@@ -10,7 +11,7 @@ export default function DataOriginBadge({ origin, antiguedadHoras }) {
     return <span className="fv-badge fv-badge-backup">Respaldo{ageText}</span>;
   }
   if (origin === 'live') {
-    return <span className="fv-badge fv-badge-live">Datos en vivo</span>;
+    return <span className="fv-badge fv-badge-live">Datos reales · consulta directa</span>;
   }
   return <span className="fv-badge fv-badge-neutral">Origen no especificado</span>;
 }

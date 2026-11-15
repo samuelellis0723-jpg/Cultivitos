@@ -12,13 +12,15 @@ for (const state of ['demo', 'unavailable', 'valid']) {
     await page.goto('/');
     if (state === 'demo') {
       await page.getByRole('button', { name: 'Activar modo demostración' }).click();
-      await page.getByRole('button', { name: 'Usar ubicación ilustrativa de demostración' }).click();
+      await page.getByRole('button', { name: 'Cargar Liberia · punto ilustrativo, no finca validada' }).click();
     }
     if (state === 'valid') {
       await page.evaluate(finca => localStorage.setItem('fieldverse.draft.v1', JSON.stringify({ schemaVersion: 1, finca, catalogVersion: 'demo-0.2' })), finca);
       await page.reload();
       await expect(page.getByLabel('Latitud', { exact: true })).toHaveValue('10.45');
       await expect(page.getByLabel('¿Qué tipo de riego usas?')).toHaveValue('riego_apoyo');
+      await expect(page.getByRole('button', { name: 'Modo demostración', exact: true })).toHaveAttribute('aria-pressed', 'false');
+      await expect(page.locator('.fv-badge-demo')).toHaveText('Demostración');
     }
     const map = page.getByRole('region', { name: /^Mapa interactivo/ });
     await expect(map).toBeVisible();
@@ -29,8 +31,8 @@ for (const state of ['demo', 'unavailable', 'valid']) {
       await expect(page.getByText('Error interno técnico que no debe aparecer', { exact: true })).not.toBeVisible();
     }
     await page.waitForTimeout(800); // Allow visible map tiles to paint before evidence capture.
-    await mkdir('docs/capturas', { recursive: true });
-    await page.screenshot({ path: `docs/capturas/tu-finca-${state}-${info.project.name}.png`, fullPage: true });
+    await mkdir('test-results/capturas', { recursive: true });
+    await page.screenshot({ path: `test-results/capturas/tu-finca-${state}-${info.project.name}.png`, fullPage: true });
     // Real map event updates form; coordinates remain editable without network.
     await map.click({ position: { x: 130, y: 180 } });
     const selected = await page.getByLabel('Latitud', { exact: true }).inputValue();

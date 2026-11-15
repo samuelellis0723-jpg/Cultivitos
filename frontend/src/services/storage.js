@@ -1,3 +1,4 @@
+import { validIsoDate } from '../utils/dates.js';
 import { adaptCatalog, adaptSimulationResponse } from './adapters.js';
 const DRAFT_KEY = 'fieldverse.draft.v1';
 const COMPARISONS_KEY = 'fieldverse.comparisons.v1';
@@ -51,7 +52,7 @@ export function loadSavedComparisons() {
     if (!Array.isArray(parsed)) return { ok: true, items: [] };
     const items = parsed.filter(item => {
       try {
-        if (item.schemaVersion !== 2 || !item.finca || !item.catalog || !item.simulation || !Number.isFinite(Date.parse(item.savedAt))) return false;
+        if (item.schemaVersion !== 2 || !item.finca || !item.catalog || !item.simulation || !validIsoDate(item.savedAt)) return false;
         adaptCatalog(item.catalog); adaptSimulationResponse(item.simulation);
         return true;
       } catch { return false; }

@@ -43,7 +43,7 @@ export default function ClimateHistory({ state, onRetry }) {
   const data = state.data;
   const precip = data.variables?.precipitacion;
   const temp = data.variables?.temperaturaMedia;
-  const sourceTitle = data.fuentes?.[0]?.titulo || 'Fuente climática del servidor';
+  const sourceTitle = data.fuentes?.[0]?.titulo || data.fuentes?.[0]?.proveedor || 'Fuente sin nombre';
 
   return (
     <section className="fv-card" aria-labelledby="climate-history-title">
@@ -59,6 +59,9 @@ export default function ClimateHistory({ state, onRetry }) {
         <DataOriginBadge origin={data.origen} antiguedadHoras={data.antiguedadHoras} />
       </div>
 
+      <div className="fv-row-wrap" style={{ marginBottom: '12px' }}>
+        {Object.entries(data.variables).map(([key, variable]) => <span key={key} className="fv-hint">{key}: <DataOriginBadge origin={variable.procedencia} />{variable.procedencia === 'backup' ? ` · ${data.fuentes.find(f => f.id === variable.fuenteId)?.antiguedad || 'Antigüedad no indicada'}` : ''}</span>)}
+      </div>
       <div className="fv-chart-wrap" role="img" aria-label="Gráfico histórico de precipitación y temperatura media diaria">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data.chartSeries} margin={{ top: 10, right: 16, left: 0, bottom: 8 }}>
@@ -125,7 +128,7 @@ export default function ClimateHistory({ state, onRetry }) {
         <div>
           <span className="fv-meta-item-label">Cobertura y consulta</span>
           <span>
-            Precip: {precip?.cobertura ?? '—'}% · Temp: {temp?.cobertura ?? '—'}%
+            Precip: {precip?.cobertura?.porcentaje ?? '—'}% · Temp: {temp?.cobertura?.porcentaje ?? '—'}%
             {precip?.fechaConsulta ? ` · ${precip.fechaConsulta.slice(0, 10)}` : ''}
           </span>
         </div>
