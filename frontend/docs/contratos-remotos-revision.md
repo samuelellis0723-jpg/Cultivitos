@@ -24,6 +24,10 @@ fusionaron ramas ni se editaron archivos de backend o dominio.
   El frontend conserva esos motivos, muestra las estrategias sin ganadora y
   presenta como provisional las estrategias cuyo catálogo tiene la lista de
   `parametrosPuntuacion` vacía. La prueba de contrato usa esta forma publicada.
+  La respuesta de simulación declara `evidencia.origen: "live"` pero no
+  incluye `evidencia.fuentes`; el frontend conserva la declaración y deja la
+  lista de fuentes vacía, sin completar fuentes por su cuenta. Alex debe
+  incluir la procedencia usada por esa simulación para poder verificarla.
 - El modo demo sigue separado: `estado: "demo"`, evidencia `origen: "demo"`
   y explicación que identifica la matriz ficticia. No se considera una
   recomendación real.
