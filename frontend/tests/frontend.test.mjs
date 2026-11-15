@@ -133,3 +133,47 @@ test('rechaza ciclos ajenos y orden repetido', () => {
   const raw = structuredClone(DEMO_CATALOG); raw.estrategias[0].pasos[1].cicloId = 'inexistente';
   assert.throws(() => adaptCatalog(raw));
 });
+
+test('adaptSimulationResponse acepta D10 elegible: null con elegibilidadEstado no_evaluable', () => {
+  const raw = {
+    estado: 'incompleto',
+    escenarios: ['habitual', 'seco', 'humedo'],
+    resultados: [
+      {
+        estrategiaId: 'E1',
+        elegible: null,
+        elegibilidadEstado: 'no_evaluable',
+        puntajes: { habitual: null, seco: null, humedo: null },
+        peorArrepentimiento: null,
+        motivoPeorArrepentimiento: 'No calculable',
+        motivosNoCalculable: { habitual: 'pendiente', seco: 'pendiente', humedo: 'pendiente' },
+        motivosDescarte: [],
+      },
+    ],
+    descartes: [],
+    ganadoras: [],
+    explicacion: 'Evaluación incompleta.',
+    evidencia: { origen: 'backup', fuentes: [{ id: 'f1', origen: 'backup' }] },
+  };
+  const adapted = adaptSimulationResponse(raw);
+  assert.equal(adapted.resultados[0].elegible, null);
+  assert.equal(adapted.resultados[0].elegibilidadEstado, 'no_evaluable');
+  assert.deepEqual(adapted.ganadoras, []);
+});
+
+test('rechaza sin_opciones con elegible null (insuficiencia prevalece sobre sin_opciones)', () => {
+  const raw = structuredClone(DEMO_SIMULATION_CASES.no_options);
+  raw.resultados[0].elegible = null;
+  raw.resultados[0].elegibilidadEstado = 'no_evaluable';
+  raw.resultados[0].motivosDescarte = [];
+  raw.resultados[0].motivosNoCalculable = { habitual: 'pendiente', seco: 'pendiente', humedo: 'pendiente' };
+  raw.descartes = raw.descartes.filter((d) => d.estrategiaId !== raw.resultados[0].estrategiaId);
+  assert.throws(() => adaptSimulationResponse(raw), { code: 'INVALID_SIMULATION' });
+});
+
+test('rechaza elegibilidadEstado inconsistente con elegible null', () => {
+  const raw = structuredClone(DEMO_SIMULATION_CASES.incomplete);
+  raw.resultados[0].elegible = null;
+  raw.resultados[0].elegibilidadEstado = 'elegible';
+  assert.throws(() => adaptSimulationResponse(raw), { code: 'INVALID_SIMULATION' });
+});

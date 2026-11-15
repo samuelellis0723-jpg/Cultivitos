@@ -78,11 +78,32 @@ function mapearResultados(resultados) {
   return resultados.map((r) => ({
     estrategiaId: r.estrategiaId,
     elegible: r.elegible,
+    elegibilidadEstado: r.elegible === true ? 'elegible' : r.elegible === false ? 'descartada' : 'no_evaluable',
     puntajes: r.puntuaciones,
     peorArrepentimiento: r.peorArrepentimiento,
     motivoPeorArrepentimiento: r.motivoPeorArrepentimiento,
     motivosNoCalculable: r.motivosNoCalculable,
     motivosDescarte: r.motivosDescarte,
+  }));
+}
+
+function construirResultadosRealesIncompletos(catalogo) {
+  const motivoReglas = 'Metodología agrícola real (D7) no habilitada.';
+  const motivoArrepentimiento =
+    'No calculable: la elegibilidad y las puntuaciones agronómicas reales aún no son evaluables (reglas D5/D7 pendientes).';
+  return (catalogo.estrategias ?? []).map((e) => ({
+    estrategiaId: e.id,
+    elegible: null,
+    elegibilidadEstado: 'no_evaluable',
+    puntajes: { habitual: null, seco: null, humedo: null },
+    peorArrepentimiento: null,
+    motivoPeorArrepentimiento: motivoArrepentimiento,
+    motivosNoCalculable: {
+      habitual: motivoReglas,
+      seco: motivoReglas,
+      humedo: motivoReglas,
+    },
+    motivosDescarte: [],
   }));
 }
 
@@ -105,15 +126,37 @@ export async function simular({ finca, modo } = {}, { getClimate = getNasaHistor
     }
   }
 
-  const entrada = {
-    escenarios: ESCENARIOS,
-    estrategias: armarEstrategiasParaMotor(catalogo, modo),
-  };
-  const motor = calcularMinimaxRegret(entrada);
+  let estado;
+  let escenarios = [...ESCENARIOS];
+  let resultadosMapeados;
+  let descartes;
+  let ganadoras;
+  let peorArrepentimientoMinimo;
+  let mejoresPorEscenario;
 
-  const estado = esDemo ? 'demo' : motor.estado;
+  if (esDemo) {
+    const entrada = {
+      escenarios: ESCENARIOS,
+      estrategias: armarEstrategiasParaMotor(catalogo, modo),
+    };
+    const motor = calcularMinimaxRegret(entrada);
+    estado = 'demo';
+    escenarios = motor.escenarios;
+    resultadosMapeados = mapearResultados(motor.resultados);
+    descartes = motor.descartes;
+    ganadoras = motor.ganadoras;
+    peorArrepentimientoMinimo = motor.peorArrepentimientoMinimo;
+    mejoresPorEscenario = motor.mejoresPorEscenario;
+  } else {
+    estado = 'incompleto';
+    resultadosMapeados = construirResultadosRealesIncompletos(catalogo);
+    descartes = [];
+    ganadoras = [];
+    peorArrepentimientoMinimo = null;
+    mejoresPorEscenario = { habitual: null, seco: null, humedo: null };
+  }
+
   const origenDatos = clima?.fuentes?.[0]?.origen ?? null;
-  const resultadosMapeados = mapearResultados(motor.resultados);
   const datosFaltantes = esDemo
     ? []
     : [...faltantesClima, 'Metodología agrícola no habilitada: D7 solo admite pruebas sintéticas internas; faltan reglas ratificadas e integración real.'];
@@ -129,21 +172,21 @@ export async function simular({ finca, modo } = {}, { getClimate = getNasaHistor
     estado,
     prioridadFinca: finca.prioridad,
     resultados: resultadosMapeados,
-    ganadoras: motor.ganadoras,
-    peorArrepentimientoMinimo: motor.peorArrepentimientoMinimo,
+    ganadoras,
+    peorArrepentimientoMinimo,
     datosFaltantes,
     explicacionBase
   });
 
   return {
     estado,
-    escenarios: motor.escenarios,
+    escenarios,
     clima,
     resultados: resultadosMapeados,
-    descartes: motor.descartes,
-    ganadoras: motor.ganadoras,
-    peorArrepentimientoMinimo: motor.peorArrepentimientoMinimo,
-    mejoresPorEscenario: motor.mejoresPorEscenario,
+    descartes,
+    ganadoras,
+    peorArrepentimientoMinimo,
+    mejoresPorEscenario,
     explicacion: iaRespuesta.explicacionIA,
     evidencia: {
       origen: esDemo ? 'demo' : origenDatos,

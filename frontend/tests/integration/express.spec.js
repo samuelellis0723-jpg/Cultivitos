@@ -18,5 +18,7 @@ test('Tu finca → Explora → Compara uses Express and reviewed real backup', a
   await expect(page.getByRole('heading',{name:/Historial climático 2015–2024/})).toBeVisible();
   await page.getByRole('link',{name:'Comparar estrategias'}).click();
   await expect(page.getByText('Evaluación incompleta — sin ganadora declarada')).toBeVisible();
+  await expect(page.getByText('Elegibilidad no evaluable').first()).toBeVisible();
+  await expect(page.getByText('Descartada')).toHaveCount(0);
   await expect(page.getByText('Ganadora minimax:',{exact:false})).toHaveCount(0);
 });

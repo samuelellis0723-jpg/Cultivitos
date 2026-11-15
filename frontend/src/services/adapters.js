@@ -120,27 +120,35 @@ export function adaptSimulationResponse(raw) {
   if (raw.evidencia?.origen != null && !['live','backup','demo','mixed'].includes(raw.evidencia.origen)) fail();
   if (raw.estado === 'demo' && raw.evidencia?.origen !== 'demo') fail();
   if (!['completo','incompleto','sin_opciones','demo'].includes(raw.estado) || !Array.isArray(escenarios) || escenarios.length !== 3 || new Set(escenarios).size !== 3 || escenarios.some(s => !['habitual','seco','humedo'].includes(s)) || !Array.isArray(raw.ganadoras) || !raw.evidencia) fail();
+  const expectedEligibilityState = (elegible) =>
+    elegible === true ? 'elegible' : elegible === false ? 'descartada' : 'no_evaluable';
+
   const ids = new Set();
   for (const r of raw.resultados) {
-    if (!r || typeof r.estrategiaId !== 'string' || !r.estrategiaId || ids.has(r.estrategiaId) || typeof r.elegible !== 'boolean') fail();
+    if (!r || typeof r.estrategiaId !== 'string' || !r.estrategiaId || ids.has(r.estrategiaId)) fail();
+    if (r.elegible !== null && typeof r.elegible !== 'boolean') fail();
+    const derivedState = expectedEligibilityState(r.elegible);
+    if (r.elegibilidadEstado !== undefined && r.elegibilidadEstado !== derivedState) fail();
     ids.add(r.estrategiaId);
     for (const s of escenarios) {
       const v = r.puntajes?.[s];
       if (v !== null && (!Number.isFinite(v) || v < 0 || v > 100)) fail();
-      if (v === null && !r.motivosNoCalculable?.[s] && r.elegible) fail();
+      if (v === null && !r.motivosNoCalculable?.[s] && r.elegible !== false) fail();
     }
-    if (!r.elegible && (!Array.isArray(r.motivosDescarte) || !r.motivosDescarte.length || r.motivosDescarte.some(reason => typeof reason !== 'string' || !reason.trim()))) fail();
+    if (r.elegible === false && (!Array.isArray(r.motivosDescarte) || !r.motivosDescarte.length || r.motivosDescarte.some(reason => typeof reason !== 'string' || !reason.trim()))) fail();
+    if (r.elegible === null && r.peorArrepentimiento !== null && r.peorArrepentimiento !== undefined) fail();
     // An incomplete minimax result can explain null regret through each
     // scenario's motivosNoCalculable; the API does not require a separate
     // motivoPeorArrepentimiento field for that same missing matrix.
-    if (r.peorArrepentimiento !== null && (!Number.isFinite(r.peorArrepentimiento) || r.peorArrepentimiento < 0 || r.peorArrepentimiento > 100)) fail();
+    if (r.peorArrepentimiento !== null && r.peorArrepentimiento !== undefined && (!Number.isFinite(r.peorArrepentimiento) || r.peorArrepentimiento < 0 || r.peorArrepentimiento > 100)) fail();
   }
-  if (raw.descartes !== undefined && (!Array.isArray(raw.descartes) || raw.descartes.some(d => !d || !raw.resultados.some(r => r.estrategiaId === d.estrategiaId && !r.elegible) || !Array.isArray(d.motivos) || !d.motivos.length || d.motivos.some(m => typeof m !== 'string' || !m.trim())))) fail();
-  if (new Set(raw.ganadoras).size !== raw.ganadoras.length || raw.ganadoras.some(id => !raw.resultados.some(r => r.estrategiaId === id && r.elegible))) fail();
+  if (raw.descartes !== undefined && (!Array.isArray(raw.descartes) || raw.descartes.some(d => !d || !raw.resultados.some(r => r.estrategiaId === d.estrategiaId && r.elegible === false) || !Array.isArray(d.motivos) || !d.motivos.length || d.motivos.some(m => typeof m !== 'string' || !m.trim())))) fail();
+  if (new Set(raw.ganadoras).size !== raw.ganadoras.length || raw.ganadoras.some(id => !raw.resultados.some(r => r.estrategiaId === id && r.elegible === true))) fail();
   if (['incompleto','sin_opciones'].includes(raw.estado) && raw.ganadoras.length) fail();
-  if (raw.estado === 'sin_opciones' && raw.resultados.some(r => r.elegible)) fail();
+  if (raw.estado === 'sin_opciones' && raw.resultados.some(r => r.elegible !== false)) fail();
   if (['completo','demo'].includes(raw.estado)) {
-    const eligible = raw.resultados.filter(r => r.elegible);
+    if (raw.resultados.some(r => r.elegible === null)) fail();
+    const eligible = raw.resultados.filter(r => r.elegible === true);
     if (!eligible.length || eligible.some(r => r.peorArrepentimiento === null || escenarios.some(s => r.puntajes[s] === null))) fail();
     const min = Math.min(...eligible.map(r => r.peorArrepentimiento));
     const winners = eligible.filter(r => r.peorArrepentimiento === min).map(r => r.estrategiaId);
@@ -150,6 +158,7 @@ export function adaptSimulationResponse(raw) {
   const resultados = raw.resultados.map((item) => ({
     estrategiaId: String(item.estrategiaId),
     elegible: item.elegible,
+    elegibilidadEstado: item.elegibilidadEstado ?? expectedEligibilityState(item.elegible),
     puntajes: item.puntajes ?? {},
     peorArrepentimiento:
       item.peorArrepentimiento === undefined ? null : item.peorArrepentimiento,
