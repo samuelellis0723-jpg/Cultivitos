@@ -87,6 +87,9 @@ function mapearResultados(resultados) {
 }
 
 export async function simular({ finca, modo } = {}, { getClimate = getNasaHistoricalClimateSeries, explain = generarExplicacionIA } = {}) {
+  if (modo !== undefined && !['real', 'demo'].includes(modo)) {
+    throw new ErrorEntradaDominio(CODIGOS_ERROR.ENTRADA_INVALIDA, 'Modalidad no disponible.');
+  }
   const catalogo = await catalogoService.getCatalog();
   validarFinca(finca, catalogo);
 
@@ -98,7 +101,7 @@ export async function simular({ finca, modo } = {}, { getClimate = getNasaHistor
       clima = await getClimate({ latitude: finca.latitude, longitude: finca.longitude, ...HISTORY_PERIOD });
       faltantesClima = validarClima(clima);
     } catch (error) {
-      faltantesClima = [`clima: no se pudo obtener (${error.message})`];
+      faltantesClima = ['Clima no disponible: no se pudo consultar el historial ni recuperar un respaldo válido.'];
     }
   }
 
@@ -113,15 +116,15 @@ export async function simular({ finca, modo } = {}, { getClimate = getNasaHistor
   const resultadosMapeados = mapearResultados(motor.resultados);
   const datosFaltantes = esDemo
     ? []
-    : [...faltantesClima, 'Reglas de puntuación agronómica (pendiente Hellen, D7).'];
+    : [...faltantesClima, 'Metodología agrícola no habilitada: D7 solo admite pruebas sintéticas internas; faltan reglas ratificadas e integración real.'];
 
   const explicacionBase = esDemo
     ? 'Demostración con matriz ficticia del contrato. Los valores no provienen de NASA ni de datos reales.'
     : estado === 'incompleto'
-      ? 'Simulación incompleta: faltan las reglas de puntuación agronómica o datos climáticos esenciales. No se declara ganadora.'
+      ? 'Evaluación incompleta: la metodología agrícola real aún no está habilitada. Disponer de historial climático no habilita D7 ni permite declarar ganadoras.'
       : 'Simulación calculada con el motor minimax regret.';
 
-  // Llamada a OpenAI con guardrails
+  // La IA opcional solo redacta texto; los resultados y evidencia se construyen aquí.
   const iaRespuesta = await explain({
     estado,
     prioridadFinca: finca.prioridad,

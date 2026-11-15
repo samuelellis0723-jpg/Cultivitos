@@ -50,6 +50,7 @@ for (const state of ['demo', 'unavailable', 'valid']) {
 test('riego requiere precisar tipo y conserva contrato de entrada', async ({ page }) => {
   await page.route('**/api/catalog', route => route.fulfill({ json: DEMO_CATALOG }));
   await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Explorar mi finca' })).toBeEnabled();
   await page.getByLabel('Latitud', { exact: true }).fill('10.45');
   await page.getByLabel('Longitud', { exact: true }).fill('-85.4');
   await page.getByRole('radio', { name: /^Tengo riego/ }).check();

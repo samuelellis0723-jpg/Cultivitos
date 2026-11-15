@@ -2,9 +2,9 @@ import express from 'express';
 import healthRouter from './routes/health.routes.js';
 import { createClimateRouter } from './routes/climate.routes.js';
 import catalogRouter from './routes/catalog.routes.js';
-import simulationRouter from './routes/simulation.routes.js';
+import { createSimulationRouter } from './routes/simulation.routes.js';
 
-export function createApp({ getClimateHistory } = {}) {
+export function createApp({ getClimateHistory, simulationDependencies } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(express.json({ limit: '100kb' }));
@@ -15,7 +15,7 @@ export function createApp({ getClimateHistory } = {}) {
     next();
   });
 
-  app.use('/api/simulations', simulationRouter);
+  app.use('/api/simulations', createSimulationRouter(simulationDependencies));
 
   app.use('/api/health', healthRouter);
   app.use('/api/climate', createClimateRouter(getClimateHistory));

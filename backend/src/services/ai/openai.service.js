@@ -1,63 +1,34 @@
-import dotenv from 'dotenv';
-dotenv.config();
-
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
-
-export async function generarExplicacionIA(resultadoSimulacion) {
-  const apiKey = process.env.OPENAI_API_KEY;
-
-  if (!apiKey) {
-    return {
-      explicacionIA: resultadoSimulacion.explicacionBase,
-      origen: 'fallback_sin_key'
-    };
-  }
-
-  const promptSistema = `Eres FIELDVERSE AI, un asistente agronómico experto en toma de decisiones bajo incertidumbre climática.
-Tu tarea es redactar una explicación breve, clara y directa (máximo 3 oraciones) para un agricultor sobre el resultado de su simulación de rotaciones de cultivos.
-REGLAS ESTRICTAS:
-1. No inventes datos agronómicos, rendimientos ni fuentes que no estén en el JSON.
-2. Si el estado es "incompleto" o "sin_opciones", explica qué información o reglas faltan y NO recomiendes ninguna estrategia ni cultivo.
-3. Si el estado es "demo" o "completo", explica por qué ganó la estrategia indicada basándote en el criterio de menor peor arrepentimiento.`;
-
-  const promptUsuario = `Redacta la explicación para el agricultor a partir de este resultado:\n${JSON.stringify(resultadoSimulacion, null, 2)}`;
-
-  try {
-    const response = await fetch(OPENAI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: promptSistema },
-          { role: 'user', content: promptUsuario }
-        ],
-        temperature: 0.3,
-        max_tokens: 300
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API respondió con estado ${response.status}`);
-    }
-
-    const data = await response.json();
-    const texto = data.choices?.[0]?.message?.content?.trim();
-
-    if (!texto) throw new Error('Respuesta vacía de OpenAI');
-
-    return {
-      explicacionIA: texto,
-      origen: 'openai_live'
-    };
-  } catch (error) {
-    console.error('Error al consultar OpenAI:', error.message);
-    return {
-      explicacionIA: resultadoSimulacion.explicacionBase,
-      origen: 'fallback_error_ia'
-    };
-  }
+export function createExplainer({ apiKey = process.env.OPENAI_API_KEY, fetchImpl = globalThis.fetch, timeoutMs = 5000 } = {}) {
+  return async function generarExplicacionIA(resultado) {
+    const fallback = origen => ({ explicacionIA: resultado.explicacionBase, origen });
+    if (!apiKey) return fallback('fallback_sin_key');
+    const controller = new AbortController();
+    let timer;
+    try {
+      const request = async () => {
+        const response = await fetchImpl(OPENAI_API_URL, {
+          method: 'POST', signal: controller.signal,
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+          body: JSON.stringify({ model: 'gpt-4o-mini', messages: [
+            { role: 'system', content: 'Explica brevemente el resultado recibido. No inventes reglas ni recomendaciones. Incompleto o sin opciones implica ninguna ganadora. Demo es ficticio. Solo devuelve texto explicativo.' },
+            { role: 'user', content: JSON.stringify(resultado) },
+          ], temperature: 0.3, max_tokens: 300 }),
+        });
+        if (!response.ok) throw new Error('Proveedor no disponible');
+        const data = await response.json();
+        const text = data.choices?.[0]?.message?.content;
+        if (typeof text !== 'string' || !text.trim()) throw new Error('Explicación vacía');
+        return { explicacionIA: text.trim(), origen: 'openai_live' };
+      };
+      return await Promise.race([request(), new Promise((_, reject) => {
+        timer = setTimeout(() => { controller.abort(); reject(new Error('timeout')); }, timeoutMs);
+      })]);
+    } catch {
+      return fallback(controller.signal.aborted ? 'fallback_timeout_ia' : 'fallback_error_ia');
+    } finally { clearTimeout(timer); }
+  };
+}
+export async function generarExplicacionIA(resultado) {
+  return createExplainer()(resultado);
 }

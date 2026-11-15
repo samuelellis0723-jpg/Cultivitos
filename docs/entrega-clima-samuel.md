@@ -1,5 +1,9 @@
 # Entrega climática de Samuel para Hellen
 
+La primera sección conserva el registro histórico de feat/backend-samuel frente
+a 0230aa3. El estado local vigente y las verificaciones nuevas se describen en
+«Integración local posterior», al final; no deben confundirse ambos resultados.
+
 Fecha: 15 de noviembre de 2026. Trabajo realizado en copia independiente de este chat;
 no se accedió a `/home/panterita/Proyectos/Cultivitos` ni se modificó la computadora de Samuel.
 
@@ -95,9 +99,9 @@ explicación controlada. No se certifica el recorrido completo ni la integració
 - `duracionMeses`: maíz 4, frijol 3 y sorgo 4; no se convirtieron a duracionDias.
 - Fuentes: src_nasa_power y src_piloto_fao; esta última tiene URL null y una nota
   general FAO/MAG, insuficiente para tratarla como evidencia agrícola verificada.
-- El controlador GET /api/catalog sigue buscando backend/data/catalog.json, que no
-  existe; el servicio de simulación usa data/catalog.json. Es un bloqueo conocido
-  fuera del alcance climático de esta entrega; debe corregirse en tarea posterior.
+- Corrección del diagnóstico histórico: ambas rutas resolvían al mismo
+  `data/catalog.json` raíz. El comentario del controlador era incorrecto. La
+  integración actual elimina la lectura duplicada mediante `getCatalog`.
 
 ## Pendientes para Hellen y la integración
 
@@ -136,3 +140,56 @@ node backend/scripts/check-climate-consumers.mjs /ruta/frontend /ruta/backend/sr
 
 No requiere claves de NASA ni IA. --live desactiva los respaldos para que una respuesta
 200 no pueda confundirse con una consulta nueva cuando realmente proviene de copia.
+
+
+## Integración local posterior — base d06f217 (sin commit)
+
+Los resultados anteriores corresponden a la entrega histórica frente a 0230aa3.
+Alex aportó catálogo, simulación demo/real, Minimax y explicación IA opcional.
+Samuel incorporó el servicio climático 05f90b2 mediante c9890d1; d06f217
+incorpora el dominio experimental de Hellen 54eff93. Los cambios locales de
+Samuel centralizan la lectura del catálogo, añaden inyección HTTP para pruebas,
+rechazan modos públicos desconocidos y separan ausencia de clima de D7 no habilitado.
+La IA opcional conserva un único proveedor en servicios: fallback determinista sin
+clave, por error o timeout de 5000 ms, incluida lectura JSON; solo devuelve texto.
+Se eliminó el duplicado sin consumidores en domain/simulation/ai/ (única excepción).
+
+El catálogo permanece 1.0.0-piloto con duracionMeses y fuentes sin verificar.
+No se convierte a duracionDias ni se ratifican ventanas. Debe acordarse con Hellen
+la migración al Ciclo v0.2, sus rangos, evidencia y versión del catálogo.
+La interfaz ya representa duraciones null como pendientes.
+
+Conexiones futuras: D5 evaluarElegibilidad({catalogo,finca}) devolverá elegibilidad
+y motivos antes de Minimax; internamente usa D18 evaluarCompatibilidadTemporal
+({ciclo1,ciclo2,mesInicio,bufferDias}) y D19 resolverNivelEvidenciaCompuesto.
+Requieren ciclos v0.2 y evidencia/localidad ratificadas que el catálogo actual no aporta.
+D7 calcularPuntuacionesD7 requiere escenarios, indicadores, reglas, pesos y fuentes;
+solo admite prueba_sintetica interna. Falta acordar la transformación D6 desde clima
+a indicadores. D20 no tiene módulo integrado: no se inventa ni invoca uno.
+Estos bloqueos impiden conectar elegibilidad y puntuación real; no se copian sus reglas.
+
+Reproducción del navegador offline con Express y respaldo real revisado:
+`cd frontend && npx --no-install playwright test --config playwright.integration.config.js`.
+La suite normal usa respuestas simuladas: `npm run test:e2e --prefix frontend`.
+Ninguna de estas verificaciones nuevas representa una consulta nueva a NASA.
+
+### Verificaciones nuevas sobre d06f217 con cambios locales
+
+- Backend: 126 pruebas aprobadas, 0 fallidas (122 previas + HTTP integrado y
+  tres pruebas de IA con proveedor simulado). Catálogo HTTP 200 y coherente con
+  simulación; historial HTTP 200 con envoltura y respaldo real; demo/real HTTP
+  200, prueba_sintetica pública 400.
+- Frontend unitario: 49 aprobadas, 0 fallidas.
+- Consumidores: 4/4 con `node backend/scripts/check-climate-consumers.mjs frontend backend/src/domain`.
+- Build Vite correcto; advertencia de bundle principal superior a 500 kB.
+- Navegador Express + respaldo real: 2/2 (escritorio y móvil), desde frontend/.
+  El primer intento falló por buscar un enlace como botón; corregido el selector.
+- Suite frontend con respuestas simuladas: 30/30. Un intento previo obtuvo 29/30
+  porque la prueba rellenaba coordenadas antes de terminar la inicialización del
+  catálogo; ahora espera al formulario habilitado antes de introducir datos.
+- No se consultó NASA en vivo ni OpenAI real en estas verificaciones. Los fallos
+  de proveedor de los tests son simulados; el respaldo utilizado es la captura
+  real revisada ya incluida. No se generaron nuevas capturas NASA ni cachés.
+- No hubo commit, push ni operaciones de integración Git. D5/D7/Minimax y
+  docs/metodologia permanecen intactos. Solo se eliminó el duplicado IA autorizado
+  en domain/simulation/ai/, sin consumidores encontrados.

@@ -1,0 +1,22 @@
+import { test, expect } from '@playwright/test';
+test('Tu finca → Explora → Compara uses Express and reviewed real backup', async ({page}) => {
+  await page.goto('/');
+  await expect(page.getByLabel('Latitud',{exact:true})).toHaveValue('');
+  await expect(page.getByLabel('Longitud',{exact:true})).toHaveValue('');
+  await page.getByLabel('Latitud',{exact:true}).fill('10.63');
+  await page.getByLabel('Longitud',{exact:true}).fill('-85.44');
+  await page.locator('.fv-details-summary').click();
+  await page.getByLabel('Mes de inicio previsto (1–12)').selectOption('5');
+  const history = page.waitForResponse(r=>r.url().includes('/api/climate/history?'));
+  await page.getByRole('button',{name:'Explorar mi finca'}).click();
+  const response = await history;
+  expect(response.status()).toBe(200);
+  const body = await response.json();
+  expect(body.clima.periodo).toEqual({inicio:'20150101',fin:'20241231'});
+  expect(body.clima.coordenadas.solicitadas).toEqual({latitude:10.63,longitude:-85.44});
+  expect(body.clima.origen).toBe('backup');
+  await expect(page.getByRole('heading',{name:/Historial climático 2015–2024/})).toBeVisible();
+  await page.getByRole('link',{name:'Comparar estrategias'}).click();
+  await expect(page.getByText('Evaluación incompleta — sin ganadora declarada')).toBeVisible();
+  await expect(page.getByText('Ganadora minimax:',{exact:false})).toHaveCount(0);
+});

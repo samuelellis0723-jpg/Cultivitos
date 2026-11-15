@@ -1,6 +1,8 @@
 import { Router } from 'express';
-import { createSimulation } from '../controllers/simulation.controller.js';
-
-const router = Router();
-router.post('/', createSimulation);
-export default router;
+import { createSimulationHandler } from '../controllers/simulation.controller.js';
+export function createSimulationRouter(dependencies) {
+  const router = Router();
+  router.post('/', createSimulationHandler(dependencies));
+  return router;
+}
+export default createSimulationRouter();
