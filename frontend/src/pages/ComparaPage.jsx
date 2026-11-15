@@ -1,3 +1,4 @@
+import ScenarioSelector from '../components/climate/ScenarioSelector.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Icon from '../components/common/Icon.jsx';
@@ -15,12 +16,6 @@ import {
   loadSavedComparisons,
   saveComparison,
 } from '../services/storage.js';
-
-const SCENARIO_TABS = [
-  { id: 'habitual', label: 'Habitual' },
-  { id: 'seco', label: 'Más seco' },
-  { id: 'humedo', label: 'Más lluvioso' },
-];
 
 export default function ComparaPage() {
   const {
@@ -41,6 +36,7 @@ export default function ComparaPage() {
   const [mobileEvidenceOpen, setMobileEvidenceOpen] = useState(false);
   const [saveNotice, setSaveNotice] = useState(null);
   const [savedList, setSavedList] = useState(() => loadSavedComparisons().items);
+  const [historical, setHistorical] = useState(null);
   const evidenceTriggerRef = useRef(null);
 
   useEffect(() => {
@@ -59,9 +55,49 @@ export default function ComparaPage() {
     runSimulation,
   ]);
 
+  const savedHistory = (
+    <section className="fv-card" aria-label="Historial guardado">
+      <h2>Comparaciones guardadas</h2>
+      {savedList.map(item => (
+        <div key={item.id} className="fv-row-wrap">
+          <span>{new Date(item.savedAt).toLocaleString('es-CR')} · {item.dataMode}</span>
+          <button type="button" className="fv-btn fv-btn-secondary" onClick={() => setHistorical(item)}>
+            Consultar resultado guardado
+          </button>
+        </div>
+      ))}
+    </section>
+  );
+  if (historical) {
+    const result = historical.simulation;
+    return (
+      <div>
+        <h1>Resultado histórico guardado</h1>
+        <p>Guardado el {new Date(historical.savedAt).toLocaleString('es-CR')}. No es una evaluación actual.</p>
+        <DataOriginBadge origin={result.evidencia.origen} />
+        <p>Estado guardado: {result.estado}. {result.explicacion}</p>
+        <button className="fv-btn fv-btn-secondary" onClick={() => setHistorical(null)}>Volver a comparación actual</button>
+        <p>Selección guardada: {historical.selectedStrategyId || 'ninguna'}</p>
+        {result.resultados.map(r => (
+          <StrategyCard key={r.estrategiaId} resultado={r}
+            estrategia={historical.catalog.estrategias.find(e => e.id === r.estrategiaId)}
+            cultivos={historical.catalog.cultivos} escenarios={result.escenarios}
+            activeScenario={activeScenario} isWinner={result.ganadoras.includes(r.estrategiaId)}
+            isTie={result.ganadoras.length > 1} isSelected={historical.selectedStrategyId === r.estrategiaId}
+            allowSelection={false} />
+        ))}
+        <EvidenceContent finca={historical.finca} catalog={historical.catalog} simulation={result}
+          climateHistory={historical.climateHistory}
+          onDownloadJson={() => downloadJsonFile(historical, 'fieldverse-historico.json')}
+          onPrint={() => window.print()} />
+      </div>
+    );
+  }
+
   if (!savedFinca || catalogState.status !== 'ok') {
     return (
       <div className="fv-step-enter">
+        {savedHistory}
         <EmptyState
           title="No hay un perfil de finca activo para comparar"
           description="Completa primero el Paso 1 (Tu finca) para obtener el catálogo y evaluar estrategias."
@@ -91,6 +127,10 @@ export default function ComparaPage() {
       catalogVersion: catalog.version,
       finca: savedFinca,
       selectedStrategyId,
+      schemaVersion: 2,
+      simulation: sim,
+      catalog,
+      climateHistory: climateHistoryState.data,
       ganadoras: sim.ganadoras,
       explicacion: sim.explicacion,
     };
@@ -135,11 +175,12 @@ export default function ComparaPage() {
 
   return (
     <div className="fv-step-enter">
+      {savedHistory}
       <div className="fv-page-context">
         <div className="fv-context-left">
           <span className="fv-badge fv-badge-step">Paso 3 de 3 · Síntesis decisional</span>
           <DataOriginBadge
-            origin={sim?.evidencia?.origen || (dataMode === 'demo' ? 'demo' : 'live')}
+            origin={sim?.evidencia?.origen || (dataMode === 'demo' ? 'demo' : undefined)}
           />
           <span className="fv-row-wrap fv-hint" style={{ gap: '6px' }}>
             <Icon name="pin" size={16} />
@@ -232,20 +273,7 @@ export default function ComparaPage() {
                   <p className="fv-section-desc">{sim.explicacion}</p>
                 </div>
 
-                <div className="fv-tablist fv-no-print" role="tablist" aria-label="Resaltar escenario">
-                  {SCENARIO_TABS.map((tab) => (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={activeScenario === tab.id}
-                      className="fv-tab-btn"
-                      onClick={() => setActiveScenario(tab.id)}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
+                <ScenarioSelector value={activeScenario} onChange={setActiveScenario} prefix="compara" panelId="comparison-results" />
               </div>
             </div>
           ) : null}
@@ -262,7 +290,7 @@ export default function ComparaPage() {
           ) : null}
 
           <div className="fv-compara-grid">
-            <div className="fv-strategies-list">
+            <div className="fv-strategies-list" id="comparison-results" role="tabpanel" aria-labelledby={`compara-${activeScenario}`}>
               <div className="fv-row-wrap fv-no-print" style={{ justifyContent: 'space-between' }}>
                 <span className="fv-hint">
                   Tu selección marca el plan que prefieres conservar; las etiquetas verdes muestran las ganadoras calculadas por el motor.

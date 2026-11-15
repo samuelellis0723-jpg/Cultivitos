@@ -110,3 +110,24 @@ test('computeInputsFingerprint cambia si cambia finca o versión de catálogo', 
   assert.notEqual(fp1, fp2);
   assert.notEqual(fp1, fp3);
 });
+
+for (const [name, mutate] of [
+  ['estado ausente', x => delete x.estado],
+  ['elegibilidad ausente', x => delete x.resultados[0].elegible],
+  ['puntaje texto', x => x.resultados[0].puntajes.seco = '0'],
+  ['puntaje fuera de rango', x => x.resultados[0].puntajes.seco = 101],
+  ['ganadora inexistente', x => x.ganadoras = ['Z']],
+  ['ganadora incorrecta', x => x.ganadoras = ['A']],
+  ['incompleto con ganadora', x => x.estado = 'incompleto'],
+]) test(`rechaza ${name}`, () => {
+  const raw = structuredClone(DEMO_SIMULATION_CASES.default); mutate(raw);
+  assert.throws(() => adaptSimulationResponse(raw), { code: 'INVALID_SIMULATION' });
+});
+test('no inventa origen live', () => {
+  const raw = structuredClone(DEMO_SIMULATION_CASES.default); raw.estado = 'completo'; delete raw.evidencia.origen;
+  assert.equal(adaptSimulationResponse(raw).evidencia.origen, null);
+});
+test('rechaza ciclos ajenos y orden repetido', () => {
+  const raw = structuredClone(DEMO_CATALOG); raw.estrategias[0].pasos[1].cicloId = 'inexistente';
+  assert.throws(() => adaptCatalog(raw));
+});

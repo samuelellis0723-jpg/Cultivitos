@@ -2,6 +2,10 @@ import { useEffect, useRef } from 'react';
 import Icon from '../common/Icon.jsx';
 import DataOriginBadge from '../feedback/DataOriginBadge.jsx';
 
+function safeSourceUrl(value) {
+  try { const url = new URL(value); return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password ? url.href : null; } catch { return null; }
+}
+
 export function EvidenceContent({
   finca,
   catalog,
@@ -132,7 +136,7 @@ export function EvidenceContent({
                   <li key={f.id || i}>
                     {f.titulo || f.id}
                     {f.fecha ? ` (${f.fecha})` : ''}
-                    {f.url ? ` — ${f.url}` : ''}
+                    {safeSourceUrl(f.url || f.urlConsulta) ? <> — <a href={safeSourceUrl(f.url || f.urlConsulta)} target="_blank" rel="noopener noreferrer">Consultar fuente</a></> : null}
                   </li>
                 ))}
               </ul>
@@ -169,28 +173,41 @@ export function EvidenceContent({
 
 export function MobileEvidenceDialog({ open, onClose, triggerRef, children }) {
   const closeBtnRef = useRef(null);
+  const dialogRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
+    const dialog = dialogRef.current;
+    dialog.showModal();
     closeBtnRef.current?.focus();
-
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      dialog.close();
+      document.body.style.overflow = previousOverflow;
       triggerRef?.current?.focus();
     };
-  }, [open, onClose, triggerRef]);
+  }, [open, triggerRef]);
 
   if (!open) return null;
 
   return (
-    <div
+    <dialog
+      ref={dialogRef}
+      onKeyDown={(event) => {
+        if (event.key !== 'Tab') return;
+        const items = [...dialogRef.current.querySelectorAll('button, a[href], input, select, textarea, summary, [tabindex="0"]')]
+          .filter(element => !element.disabled && element.getClientRects().length > 0);
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault(); last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault(); first?.focus();
+        }
+      }}
+      onCancel={(e) => { e.preventDefault(); onClose(); }}
+      style={{ border: 0, padding: 0, maxWidth: '100vw', maxHeight: '100dvh', width: '100vw', height: '100dvh' }}
       className="fv-dialog-backdrop"
       role="dialog"
       aria-modal="true"
@@ -215,6 +232,6 @@ export function MobileEvidenceDialog({ open, onClose, triggerRef, children }) {
         </div>
         {children}
       </div>
-    </div>
+    </dialog>
   );
 }

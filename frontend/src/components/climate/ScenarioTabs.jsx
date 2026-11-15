@@ -1,3 +1,4 @@
+import ScenarioSelector from './ScenarioSelector.jsx';
 import Icon from '../common/Icon.jsx';
 
 const SCENARIO_META = {
@@ -36,18 +37,6 @@ export default function ScenarioTabs({
   simulationState,
   onRunSimulation,
 }) {
-  const keys = ['habitual', 'seco', 'humedo'];
-
-  const handleKeyDown = (e, index) => {
-    if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      onSelectScenario(keys[(index + 1) % keys.length]);
-    } else if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      onSelectScenario(keys[(index - 1 + keys.length) % keys.length]);
-    }
-  };
-
   const simData = simulationState.status === 'ok' ? simulationState.data : null;
 
   return (
@@ -62,30 +51,13 @@ export default function ScenarioTabs({
           </p>
         </div>
 
-        <div className="fv-tablist" role="tablist" aria-label="Escenarios climáticos hipotéticos">
-          {keys.map((key, idx) => (
-            <button
-              key={key}
-              type="button"
-              role="tab"
-              id={`tab-${key}`}
-              aria-selected={activeScenario === key}
-              aria-controls={`panel-${key}`}
-              tabIndex={activeScenario === key ? 0 : -1}
-              className="fv-tab-btn"
-              onClick={() => onSelectScenario(key)}
-              onKeyDown={(e) => handleKeyDown(e, idx)}
-            >
-              {SCENARIO_META[key].label}
-            </button>
-          ))}
-        </div>
+        <ScenarioSelector value={activeScenario} onChange={onSelectScenario} prefix="explora" panelId={`panel-${activeScenario}`} />
       </div>
 
       <div
         id={`panel-${activeScenario}`}
         role="tabpanel"
-        aria-labelledby={`tab-${activeScenario}`}
+        aria-labelledby={`explora-${activeScenario}`}
       >
         <p className="fv-hint" style={{ marginBottom: '12px' }}>
           {SCENARIO_META[activeScenario].note}
