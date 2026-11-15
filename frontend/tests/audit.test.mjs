@@ -138,7 +138,11 @@ test('top-level descartes also require reasons and discarded IDs',()=> {
   assert.throws(()=>adaptSimulationResponse(raw),{code:'INVALID_SIMULATION'});
 });
 test('unknown cycle duration stays null and is shown as pending, never as zero', () => {
-  for (const cycle of [{ duracionMeses: null }, { duracionDias: null }]) {
+  for (const cycle of [
+    { duracionMeses: null },
+    { duracionDias: null },
+    { duracionDias: null, duracionMeses: 4 },
+  ]) {
     assert.equal(cycleDurationLabel(cycle), 'Duración: Pendiente de validación');
     assert.ok(Object.values(cycle).includes(null));
   }
