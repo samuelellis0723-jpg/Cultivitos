@@ -1,4 +1,5 @@
 import { calcularMinimaxRegret, ErrorEntradaDominio, CODIGOS_ERROR } from '../../domain/simulation/minimax-regret.js';
+import { evaluarPreparacionSimulacion } from '../../domain/simulation/evaluar-preparacion-simulacion.js';
 import { getNasaHistoricalClimateSeries, HISTORY_PERIOD } from '../nasa/nasa.service.js';
 import catalogoService from '../catalog/catalog.js';
 import { generarExplicacionIA } from '../ai/openai.service.js';
@@ -87,24 +88,27 @@ function mapearResultados(resultados) {
   }));
 }
 
-function construirResultadosRealesIncompletos(catalogo) {
-  const motivoReglas = 'Metodología agrícola real (D7) no habilitada.';
-  const motivoArrepentimiento =
-    'No calculable: la elegibilidad y las puntuaciones agronómicas reales aún no son evaluables (reglas D5/D7 pendientes).';
-  return (catalogo.estrategias ?? []).map((e) => ({
-    estrategiaId: e.id,
-    elegible: null,
-    elegibilidadEstado: 'no_evaluable',
-    puntajes: { habitual: null, seco: null, humedo: null },
-    peorArrepentimiento: null,
-    motivoPeorArrepentimiento: motivoArrepentimiento,
-    motivosNoCalculable: {
-      habitual: motivoReglas,
-      seco: motivoReglas,
-      humedo: motivoReglas,
-    },
-    motivosDescarte: [],
-  }));
+function mapearPreparacionReal(preparacion) {
+  return preparacion.estrategias.map((est) => {
+    const esDescartada = est.elegibilidadEstado === 'no_elegible';
+    const motivoResumen =
+      est.motivosNoCalculable?.[0] ?? 'Metodología agrícola real (D7) no habilitada.';
+    const motivosPorEscenario = Object.fromEntries(
+      ESCENARIOS.map((s) => [s, motivoResumen])
+    );
+    return {
+      estrategiaId: est.estrategiaId,
+      elegible: esDescartada ? false : null,
+      elegibilidadEstado: esDescartada ? 'descartada' : 'no_evaluable',
+      puntajes: est.puntajes ?? { habitual: null, seco: null, humedo: null },
+      peorArrepentimiento: null,
+      motivoPeorArrepentimiento:
+        est.motivosNoCalculable?.join(' | ') ?? motivoResumen,
+      motivosNoCalculable: motivosPorEscenario,
+      motivosDescarte: esDescartada ? (est.motivosDescarte ?? []) : [],
+      advertencias: est.advertencias ?? [],
+    };
+  });
 }
 
 export async function simular({ finca, modo } = {}, { getClimate = getNasaHistoricalClimateSeries, explain = generarExplicacionIA } = {}) {
@@ -133,6 +137,7 @@ export async function simular({ finca, modo } = {}, { getClimate = getNasaHistor
   let ganadoras;
   let peorArrepentimientoMinimo;
   let mejoresPorEscenario;
+  let preparacion = null;
 
   if (esDemo) {
     const entrada = {
@@ -148,10 +153,14 @@ export async function simular({ finca, modo } = {}, { getClimate = getNasaHistor
     peorArrepentimientoMinimo = motor.peorArrepentimientoMinimo;
     mejoresPorEscenario = motor.mejoresPorEscenario;
   } else {
-    estado = 'incompleto';
-    resultadosMapeados = construirResultadosRealesIncompletos(catalogo);
-    descartes = [];
-    ganadoras = [];
+    // Nunca pasar evidenciaAtributos desde una petición HTTP pública.
+    preparacion = evaluarPreparacionSimulacion({ finca, catalogo, clima });
+    estado = preparacion.estadoPreparacion;
+    resultadosMapeados = mapearPreparacionReal(preparacion);
+    descartes = resultadosMapeados
+      .filter((r) => r.elegible === false)
+      .map((r) => ({ estrategiaId: r.estrategiaId, motivos: r.motivosDescarte }));
+    ganadoras = preparacion.ganadoras ?? [];
     peorArrepentimientoMinimo = null;
     mejoresPorEscenario = { habitual: null, seco: null, humedo: null };
   }
@@ -159,7 +168,11 @@ export async function simular({ finca, modo } = {}, { getClimate = getNasaHistor
   const origenDatos = clima?.fuentes?.[0]?.origen ?? null;
   const datosFaltantes = esDemo
     ? []
-    : [...faltantesClima, 'Metodología agrícola no habilitada: D7 solo admite pruebas sintéticas internas; faltan reglas ratificadas e integración real.'];
+    : [...new Set([
+        ...faltantesClima,
+        ...(preparacion?.datosFaltantes ?? []),
+        'Metodología agrícola no habilitada: D7 solo admite pruebas sintéticas internas; faltan reglas ratificadas e integración real.',
+      ])];
 
   const explicacionBase = esDemo
     ? 'Demostración con matriz ficticia del contrato. Los valores no provienen de NASA ni de datos reales.'
@@ -194,11 +207,18 @@ export async function simular({ finca, modo } = {}, { getClimate = getNasaHistor
       iaOrigen: iaRespuesta.origen,
       supuestos: esDemo
         ? ['Matriz ficticia del docs/contrato-api.md para verificar el algoritmo.']
-        : ['Reglas de puntuación agronómica pendientes (D7). Las puntuaciones se reportan como no calculables.'],
+        : [
+            'Reglas de puntuación agronómica pendientes (D7). Las puntuaciones se reportan como no calculables.',
+            'Preparación real evaluada con fachada experimental de dominio (D5/D18/D20/D22) sin ratificación agronómica.',
+          ],
       datosFaltantes,
-      catalogoVersion: catalogo.version,
+      catalogoVersion: preparacion?.trazabilidad?.catalogoVersion ?? catalogo.version,
       motorVersion: 'minimax-regret v1',
       reglasVersion: 'no-implementado',
+      ...(preparacion ? {
+        metodologiaRealHabilitada: preparacion.metodologiaRealHabilitada,
+        modulos: preparacion.trazabilidad?.modulos ?? null,
+      } : {}),
     },
   };
 }

@@ -35,7 +35,11 @@ test('Express catalog, history backup and demo/real simulation share catalog and
     if (modo==='real') {
       assert.deepEqual(result.ganadoras,[]);
       assert.equal(result.evidencia.origen,'backup');
+      assert.equal(result.evidencia.metodologiaRealHabilitada,false);
+      assert.equal(result.evidencia.modulos?.d7?.ejecutado,false);
+      assert.equal(result.evidencia.modulos?.minimax?.ejecutado,false);
       assert.ok(result.evidencia.datosFaltantes.some(m=>m.includes('D7')));
+      assert.ok(result.evidencia.datosFaltantes.includes('metodologia.D6'));
       assert.ok(result.resultados.every(r=>r.elegible===null && r.elegibilidadEstado==='no_evaluable'));
       assert.ok(result.resultados.every(r=>Object.values(r.puntajes).every(v=>v===null)));
     } else {
@@ -44,6 +48,11 @@ test('Express catalog, history backup and demo/real simulation share catalog and
       assert.ok(result.resultados.every(r=>r.elegible===true && r.elegibilidadEstado==='elegible'));
     }
   }
+  const forged = await fetch(base+'/api/simulations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({finca,modo:'real',evidenciaAtributos:{modo:'prueba_sintetica',declaraciones:[{atributoId:'maiz/m1/duracionDias'}]}})});
+  assert.equal(forged.status,200);
+  const forgedResult = adaptSimulationResponse(await forged.json());
+  assert.equal(forgedResult.estado,'incompleto');
+  assert.ok(forgedResult.resultados.every(r=>r.elegible===null && r.elegibilidadEstado==='no_evaluable'));
 });
 
 test('Express static build serving handles SPA routes and keeps /api/* returning 404 JSON', async t => {

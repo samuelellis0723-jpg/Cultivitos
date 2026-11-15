@@ -26,7 +26,7 @@
 - Playwright E2E interceptado (`playwright.config.js`) e integración Express con respaldo real de Liberia (`playwright.integration.config.js`, escritorio y móvil).
 
 ## Pendientes y límites científicos
-- **Integración de fachada de dominio de Hellen**: pendiente de recibir su SHA para conectar la fachada desde `simulation.service.js`; actualmente la evaluación real reporta `incompleto` honesto sin reglas agronómicas conectadas.
-- **Metodología agrícola real (D7)**: no habilitada; las puntuaciones reales y recomendaciones agronómicas siguen pendientes de ratificación científica.
+- **Fachada de dominio de Hellen (`7033092`)**: integrada en `simulation.service.js` (`evaluarPreparacionSimulacion({ finca, catalogo, clima })`), conservando `evidencia.modulos`, `datosFaltantes` y `elegible: null` / `elegibilidadEstado: 'no_evaluable'` en modo `real`. `evidenciaAtributos` nunca se acepta desde peticiones HTTP públicas.
+- **Metodología agrícola real (D6/D7)**: no habilitada; las puntuaciones reales y recomendaciones agronómicas siguen pendientes de ratificación científica.
 - **`GET /api/climate/forecast`**: pendiente de implementación en backend.
 - **Despliegue público**: no configurado (requiere proveedor/alojamiento acordado); se probó únicamente build y ejecución local compilada en Express.
