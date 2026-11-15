@@ -45,12 +45,18 @@ export function adaptCatalog(raw) {
 }
 
 export function adaptClimateHistory(raw) {
-  const origin = validateClimate(raw);
-  const precipSerie = Array.isArray(raw.variables?.precipitacion?.serie)
-    ? raw.variables.precipitacion.serie
+  // Some API deployments wrap the validated climate document with the
+  // response source. Keep that metadata intact, and validate only `clima`.
+  const envelope = raw && typeof raw === 'object' && Object.hasOwn(raw, 'clima')
+    ? raw
+    : null;
+  const climate = envelope ? envelope.clima : raw;
+  const origin = validateClimate(climate);
+  const precipSerie = Array.isArray(climate.variables?.precipitacion?.serie)
+    ? climate.variables.precipitacion.serie
     : [];
-  const tempSerie = Array.isArray(raw.variables?.temperaturaMedia?.serie)
-    ? raw.variables.temperaturaMedia.serie
+  const tempSerie = Array.isArray(climate.variables?.temperaturaMedia?.serie)
+    ? climate.variables.temperaturaMedia.serie
     : [];
 
   const byDate = new Map();
@@ -76,13 +82,14 @@ export function adaptClimateHistory(raw) {
   );
 
   return {
-    coordenadas: raw.coordenadas ?? null,
-    periodo: raw.periodo ?? null,
-    resolucion: raw.resolucion ?? 'diaria',
+    coordenadas: climate.coordenadas ?? null,
+    periodo: climate.periodo ?? null,
+    resolucion: climate.resolucion ?? 'diaria',
     origen: origin,
-    antiguedadHoras: raw.antiguedadHoras ?? null,
-    fuentes: Array.isArray(raw.fuentes) ? raw.fuentes : [],
-    variables: raw.variables,
+    antiguedadHoras: climate.antiguedadHoras ?? null,
+    fuentes: Array.isArray(climate.fuentes) ? climate.fuentes : [],
+    fuente: envelope?.fuente ?? null,
+    variables: climate.variables,
     chartSeries,
   };
 }
@@ -123,7 +130,9 @@ export function adaptSimulationResponse(raw) {
       if (v === null && !r.motivosNoCalculable?.[s] && r.elegible) fail();
     }
     if (!r.elegible && (!Array.isArray(r.motivosDescarte) || !r.motivosDescarte.length || r.motivosDescarte.some(reason => typeof reason !== 'string' || !reason.trim()))) fail();
-    if (r.peorArrepentimiento === null && r.elegible && !r.motivoPeorArrepentimiento) fail();
+    // An incomplete minimax result can explain null regret through each
+    // scenario's motivosNoCalculable; the API does not require a separate
+    // motivoPeorArrepentimiento field for that same missing matrix.
     if (r.peorArrepentimiento !== null && (!Number.isFinite(r.peorArrepentimiento) || r.peorArrepentimiento < 0 || r.peorArrepentimiento > 100)) fail();
   }
   if (raw.descartes !== undefined && (!Array.isArray(raw.descartes) || raw.descartes.some(d => !d || !raw.resultados.some(r => r.estrategiaId === d.estrategiaId && !r.elegible) || !Array.isArray(d.motivos) || !d.motivos.length || d.motivos.some(m => typeof m !== 'string' || !m.trim())))) fail();

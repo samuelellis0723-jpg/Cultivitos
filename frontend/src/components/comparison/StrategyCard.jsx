@@ -20,6 +20,7 @@ export default function StrategyCard({
   allowSelection,
 }) {
   const versionMismatch = !estrategia;
+  const provisional = Array.isArray(estrategia?.parametrosPuntuacion) && estrategia.parametrosPuntuacion.length === 0;
   const title = estrategia?.nombre || `Estrategia ${resultado.estrategiaId} (sin entrada en catálogo)`;
   const steps = estrategia ? formatOrderedSteps(estrategia, cultivos) : [];
   const canSelect = allowSelection && resultado.elegible;
@@ -52,6 +53,9 @@ export default function StrategyCard({
               {!resultado.elegible ? (
                 <span className="fv-badge fv-badge-error">Descartada</span>
               ) : null}
+              {provisional ? (
+                <span className="fv-badge fv-badge-demo">Provisional · reglas pendientes</span>
+              ) : null}
               {versionMismatch ? (
                 <span className="fv-badge fv-badge-demo">Incompatibilidad de versión</span>
               ) : null}
@@ -70,6 +74,7 @@ export default function StrategyCard({
               <span key={s.orden}>
                 {idx > 0 ? ' → ' : ''}
                 {s.cicloLabel}: {s.cropName}
+                {s.durationLabel ? ` · ${s.durationLabel}` : ''}
               </span>
             ))}
           </div>

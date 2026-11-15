@@ -1,5 +1,6 @@
 import ScenarioSelector from './ScenarioSelector.jsx';
 import Icon from '../common/Icon.jsx';
+import { cycleDurationLabel } from '../../utils/catalog.js';
 
 const SCENARIO_META = {
   habitual: {
@@ -26,6 +27,7 @@ export function formatOrderedSteps(estrategia, cultivos) {
       orden: paso.orden,
       cropName: crop?.nombre || `Cultivo (${paso.cultivoId})`,
       cicloLabel: ciclo?.etiqueta || `Ciclo ${paso.orden}`,
+      durationLabel: cycleDurationLabel(ciclo),
     };
   });
 }
@@ -96,11 +98,17 @@ export default function ScenarioTabs({
                 <div className="fv-row-wrap" style={{ justifyContent: 'space-between' }}>
                   <div>
                     <strong>{est.nombre}</strong>
+                    {Array.isArray(est.parametrosPuntuacion) && est.parametrosPuntuacion.length === 0 ? (
+                      <span className="fv-badge fv-badge-demo" style={{ marginLeft: '8px' }}>
+                        Provisional · reglas pendientes
+                      </span>
+                    ) : null}
                     <div className="fv-cycles-pill" style={{ marginTop: '6px' }}>
                       {steps.map((s, i) => (
                         <span key={s.orden}>
                           {i > 0 ? ' → ' : ''}
                           {s.cicloLabel}: {s.cropName}
+                          {s.durationLabel ? ` · ${s.durationLabel}` : ''}
                         </span>
                       ))}
                     </div>

@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { DEMO_CATALOG, DEMO_SIMULATION_CASES } from '../../src/fixtures/demoData.js';
 const finca = { latitude: 9.93, longitude: -84.09, suelo: 'desconocido', drenaje: 'desconocido', riego: 'desconocido', mesInicio: 5, prioridad: 'equilibrio', cultivosAnteriores: [] };
-async function setup(page, result, status = 200) {
+async function setup(page, result, status = 200, catalog = DEMO_CATALOG) {
   await page.route('**/api/**', async route => {
     const url = route.request().url();
-    const body = url.includes('/catalog') ? DEMO_CATALOG : url.includes('/simulations') ? result : { error: { message: 'Proveedor no disponible' } };
+    const body = url.includes('/catalog') ? catalog : url.includes('/simulations') ? result : { error: { message: 'Proveedor no disponible' } };
     await route.fulfill({ status: url.includes('/simulations') ? status : url.includes('/catalog') ? 200 : 503, json: body });
   });
   await page.goto('/');
@@ -14,9 +14,14 @@ async function setup(page, result, status = 200) {
 for (const [key, text] of [['default', 'Ganadora minimax:'], ['tie', 'Empate minimax:'], ['incomplete', 'Evaluación incompleta'], ['noOptions', 'Sin estrategias elegibles']]) {
   test(`estado ${key}`, async ({ page }) => {
     const fixture = DEMO_SIMULATION_CASES[key === 'noOptions' ? 'no_options' : key];
-    await setup(page, fixture);
+    const provisionalCatalog = structuredClone(DEMO_CATALOG);
+    if (key === 'incomplete') {
+      provisionalCatalog.estrategias.forEach((strategy) => { strategy.parametrosPuntuacion = []; });
+    }
+    await setup(page, fixture, 200, provisionalCatalog);
     await expect(page.getByText(text, { exact: false }).first()).toBeVisible();
     if (['incomplete','noOptions'].includes(key)) await expect(page.getByText('Ganadora minimax:')).toHaveCount(0);
+    if (key === 'incomplete') await expect(page.getByText('Provisional · reglas pendientes').first()).toBeVisible();
   });
 }
 for (const [name, result, status] of [['inválido', {}, 200], ['HTTP', {}, 502]]) test(name, async ({ page }) => {
